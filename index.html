@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart-Time Hub | Tu espacio de progreso</title>
+    <!-- Tipografía Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- HEADER & MARKETING -->
+        <header class="app-header">
+            <div class="header-top">
+                <div class="logo">
+                    <h1>Smart-Time <span>Hub</span></h1>
+                </div>
+                <button id="themeToggle" class="theme-btn" aria-label="Cambiar tema">☀️ Claro</button>
+            </div>
+            <p class="subtitle">Convierte tus enlaces guardados en progreso real.</p>
+            
+            <!-- GAMIFICACIÓN: Barra de Progreso -->
+            <div class="stats-container">
+                <div class="stats-text">
+                    <span id="statsMessage">¡Vamos a por el día!</span>
+                    <span id="statsNumbers">0/0 completadas</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- FORMULARIO DE ENTRADA (Cero Fricción) -->
+        <section class="input-section">
+            <form id="taskForm" class="task-form">
+                <div class="input-group full-width">
+                    <label for="urlInput">URL del contenido</label>
+                    <input type="url" id="urlInput" placeholder="https://..." required>
+                </div>
+                <div class="input-group">
+                    <label for="titleInput">¿De qué trata?</label>
+                    <input type="text" id="titleInput" placeholder="Ej. Curso de JS" required>
+                </div>
+                <div class="input-group">
+                    <label for="categoryInput">Categoría</label>
+                    <select id="categoryInput">
+                        <option value="video">🎥 Video</option>
+                        <option value="articulo">📝 Artículo</option>
+                        <option value="curso">🎓 Curso</option>
+                        <option value="proyecto">🚀 Proyecto</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="timeInput">Minutos (Aprox)</label>
+                    <input type="number" id="timeInput" placeholder="30" min="1" required>
+                </div>
+                <button type="submit" class="cta-button">Guardar para después ✨</button>
+            </form>
+        </section>
+
+        <!-- DASHBOARD DE TARJETAS -->
+        <main class="dashboard">
+            <div class="dashboard-header">
+                <h2>Tu Backlog</h2>
+                <span id="nudgeMessage" class="nudge hidden">Tienes tareas de hace más de 30 días 👀</span>
+            </div>
+            
+            <div id="emptyState" class="empty-state">
+                <div class="empty-icon">🌱</div>
+                <h3>Tu mente está libre.</h3>
+                <p>Guarda algo que quieras hacer cuando tengas tiempo libre.</p>
+            </div>
+
+            <div id="tasksGrid" class="tasks-grid">
+                <!-- Las tarjetas se inyectan aquí con JS -->
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
