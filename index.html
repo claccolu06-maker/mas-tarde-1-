@@ -67,6 +67,14 @@
                 <h2>Tu Backlog</h2>
                 <span id="nudgeMessage" class="nudge hidden">Tienes tareas de hace más de 30 días 👀</span>
             </div>
+                        <!-- SPRINT 1: El Filtro Mágico -->
+            <div class="magic-filter">
+                <label for="timeFilter">⏱️ ¿Cuánto tiempo libre tienes ahora?</label>
+                <div class="filter-controls">
+                    <input type="number" id="timeFilter" placeholder="Ej. 15 (minutos)" min="1">
+                    <button id="clearFilter" class="btn-icon btn-link hidden">✖ Limpiar</button>
+                </div>
+            </div>
             
             <div id="emptyState" class="empty-state">
                 <div class="empty-icon">🌱</div>
@@ -80,7 +88,17 @@
         </main>
     </div>
 
+        <!-- SPRINT 1: Modo Focus (Cero Distracciones) -->
+    <div id="focusOverlay" class="focus-overlay hidden">
+        <div class="focus-content">
+            <span class="focus-badge">MODO ZEN ACTIVADO 🧘‍♂️</span>
+            <h2 id="focusTitle">Leyendo Artículo de Programación</h2>
+            <div id="focusTimer" class="timer-display">15:00</div>
+            <button id="exitFocus" class="cta-button danger">Abandonar Sesión</button>
+        </div>
+    </div>
     <script src="app.js"></script>
 </body>
 
 </html>
+
