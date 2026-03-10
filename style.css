@@ -129,4 +129,40 @@ body {
 
 /* ANIMACIONES */
 @keyframes popIn { 0% { opacity: 0; transform: scale(0.9) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+
 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+/* =========================================
+   SPRINT 1: MAGIC FILTER & FOCUS MODE
+   ========================================= */
+
+/* Filtro Mágico */
+.magic-filter {
+    background: var(--bg-card); padding: 1rem 1.5rem; border-radius: var(--radius);
+    border: 1px dashed var(--accent-blue); margin-bottom: 1.5rem; display: flex;
+    justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+.magic-filter label { font-weight: 600; color: var(--accent-blue); }
+.filter-controls { display: flex; gap: 0.5rem; align-items: center; }
+.filter-controls input {
+    padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color);
+    background: var(--input-bg); color: var(--text-main); font-family: inherit; width: 150px;
+}
+
+/* Modo Focus (Pantalla Completa) */
+.focus-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background-color: #020617; /* Negro muy profundo */
+    z-index: 9999; display: flex; justify-content: center; align-items: center;
+    text-align: center; color: white;
+}
+.focus-content { max-width: 600px; padding: 2rem; animation: popIn 0.5s ease; }
+.focus-badge { background: var(--cta-green); color: black; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin-bottom: 1rem; display: inline-block; }
+.focus-content h2 { font-size: 2.5rem; margin-bottom: 2rem; line-height: 1.2; }
+.timer-display { font-size: 6rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent-blue); margin-bottom: 3rem; text-shadow: 0 0 20px rgba(56, 189, 248, 0.4); }
+.cta-button.danger { background: transparent; border: 2px solid var(--danger-red); color: var(--danger-red); }
+.cta-button.danger:hover { background: var(--danger-red); color: white; }
+
+/* Botón de Play en la tarjeta */
+.btn-play { background: rgba(56, 189, 248, 0.1); color: var(--accent-blue); }
+.btn-play:hover { background: var(--accent-blue); color: white; }
