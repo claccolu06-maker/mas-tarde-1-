@@ -1,11 +1,12 @@
 /**
  * Smart-Time Hub | Core Application Logic
- * Arquitectura modular en Vanilla JS.
+ * Sprint 1: Filtro Mágico + Focus Mode Integrado
  */
 
 const App = (() => {
-    // 1. STATE MANAGEMENT (Estado de la App)
+    // 1. STATE (Estado)
     let tasks = [];
+    let focusInterval; // Guarda el temporizador
 
     // 2. DOM ELEMENTS
     const form = document.getElementById('taskForm');
@@ -15,9 +16,16 @@ const App = (() => {
     const progressFill = document.getElementById('progressFill');
     const statsMessage = document.getElementById('statsMessage');
     const statsNumbers = document.getElementById('statsNumbers');
-    const nudgeMessage = document.getElementById('nudgeMessage');
+    
+    // Elementos del Sprint 1
+    const timeFilter = document.getElementById('timeFilter');
+    const clearFilter = document.getElementById('clearFilter');
+    const focusOverlay = document.getElementById('focusOverlay');
+    const focusTitle = document.getElementById('focusTitle');
+    const focusTimer = document.getElementById('focusTimer');
+    const exitFocusBtn = document.getElementById('exitFocus');
 
-    // 3. STORAGE MODULE
+    // 3. STORAGE
     const Storage = {
         save: () => localStorage.setItem('smartTasks', JSON.stringify(tasks)),
         load: () => {
@@ -26,7 +34,7 @@ const App = (() => {
         }
     };
 
-    // 4. LOGIC MODULE (CRUD)
+    // 4. LOGIC (CRUD & SPRINT 1)
     const addTask = (e) => {
         e.preventDefault();
         const newTask = {
@@ -34,12 +42,11 @@ const App = (() => {
             url: document.getElementById('urlInput').value,
             title: document.getElementById('titleInput').value,
             category: document.getElementById('categoryInput').value,
-            time: document.getElementById('timeInput').value,
+            time: parseInt(document.getElementById('timeInput').value), // Guardamos como número
             completed: false,
             createdAt: new Date().toISOString()
         };
-
-        tasks.unshift(newTask); // Añadir al principio
+        tasks.unshift(newTask);
         Storage.save();
         form.reset();
         UI.render();
@@ -53,59 +60,72 @@ const App = (() => {
     };
 
     const deleteTask = (id) => {
-        // Confirmación elegante (nativo pero funcional para MVP)
-        if(confirm('¿Estás seguro de eliminar esto de tu backlog?')) {
+        if(confirm('¿Seguro que quieres borrar esto?')) {
             tasks = tasks.filter(t => t.id !== id);
             Storage.save();
             UI.render();
         }
     };
 
-    // 5. UI & RENDER MODULE
+    // --- MAGIA DEL SPRINT 1: MODO FOCUS ---
+    const startFocus = (id) => {
+        const task = tasks.find(t => t.id === id);
+        if(!task) return;
+
+        // Preparamos la pantalla
+        focusTitle.textContent = task.title;
+        focusOverlay.classList.remove('hidden');
+        
+        let timeLeft = task.time * 60; // Convertimos minutos a segundos
+
+        // Función que se repite cada 1 segundo (1000 ms)
+        focusInterval = setInterval(() => {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            
+            // Formateamos para que siempre tenga 2 dígitos (ej: 09:05)
+            focusTimer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(focusInterval);
+                focusTimer.textContent = "00:00";
+                alert('¡Tiempo terminado! Gran trabajo.');
+            }
+            timeLeft--;
+        }, 1000);
+    };
+
+    const stopFocus = () => {
+        clearInterval(focusInterval); // Detenemos el reloj
+        focusOverlay.classList.add('hidden'); // Ocultamos la pantalla
+    };
+
+    // 5. UI & RENDER
     const UI = {
         updateStats: () => {
-            if(tasks.length === 0) {
-                progressFill.style.width = '0%';
-                statsMessage.textContent = '¡Añade tu primera tarea!';
-                statsNumbers.textContent = '0/0';
-                return;
-            }
-
-            const completedTasks = tasks.filter(t => t.completed).length;
-            const percentage = (completedTasks / tasks.length) * 100;
-            
+            if(tasks.length === 0) return;
+            const completed = tasks.filter(t => t.completed).length;
+            const percentage = (completed / tasks.length) * 100;
             progressFill.style.width = `${percentage}%`;
-            statsNumbers.textContent = `${completedTasks}/${tasks.length} completadas`;
-
-            // Micro-copy dinámico (Gamificación)
-            if (percentage === 0) statsMessage.textContent = '¡Vamos a por el día!';
-            else if (percentage < 50) statsMessage.textContent = 'Buen comienzo. ¡Sigue así! 💪';
-            else if (percentage < 100) statsMessage.textContent = '¡Ya casi lo tienes! 🔥';
-            else statsMessage.textContent = '¡Increíble! Has limpiado tu backlog 🏆';
+            statsNumbers.textContent = `${completed}/${tasks.length} completadas`;
+            statsMessage.textContent = percentage === 100 ? '¡Backlog limpio! 🏆' : '¡Sigue así! 💪';
         },
 
-        checkOldTasks: () => {
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            const hasOldTasks = tasks.some(t => new Date(t.createdAt) < thirtyDaysAgo && !t.completed);
-            
-            if(hasOldTasks) nudgeMessage.classList.remove('hidden');
-            else nudgeMessage.classList.add('hidden');
-        },
-
-        render: () => {
+        // Modificamos el render para aceptar un array filtrado (Sprint 1)
+        render: (filteredTasks = tasks) => {
             tasksGrid.innerHTML = '';
             
-            if (tasks.length === 0) {
+            if (filteredTasks.length === 0) {
                 emptyState.classList.remove('hidden');
                 tasksGrid.classList.add('hidden');
             } else {
                 emptyState.classList.add('hidden');
                 tasksGrid.classList.remove('hidden');
 
-                tasks.forEach(task => {
+                filteredTasks.forEach(task => {
                     const card = document.createElement('div');
                     card.className = `task-card ${task.completed ? 'completed' : ''}`;
+                    // Hemos añadido el botón "▶ Focus" al HTML de la tarjeta
                     card.innerHTML = `
                         <div class="card-header">
                             <span class="pill ${task.category}">${task.category}</span>
@@ -113,10 +133,9 @@ const App = (() => {
                         </div>
                         <h4>${task.title}</h4>
                         <div class="card-actions">
-                            <button class="btn-icon btn-link" onclick="window.open('${task.url}', '_blank')">Abrir 🔗</button>
-                            <button class="btn-icon btn-done" onclick="App.toggleComplete('${task.id}')">
-                                ${task.completed ? 'Deshacer' : '¡Hecho! ✓'}
-                            </button>
+                            <button class="btn-icon btn-play" onclick="App.startFocus('${task.id}')" title="Modo Zen">▶ Focus</button>
+                            <button class="btn-icon btn-link" onclick="window.open('${task.url}', '_blank')">🔗</button>
+                            <button class="btn-icon btn-done" onclick="App.toggleComplete('${task.id}')">✓</button>
                             <button class="btn-icon btn-delete" onclick="App.deleteTask('${task.id}')">🗑</button>
                         </div>
                     `;
@@ -124,40 +143,44 @@ const App = (() => {
                 });
             }
             UI.updateStats();
-            UI.checkOldTasks();
         }
     };
 
-    // 6. THEME SWITCHER
-    const toggleTheme = () => {
-        const html = document.documentElement;
-        const isDark = html.getAttribute('data-theme') === 'dark';
-        const newTheme = isDark ? 'light' : 'dark';
-        
-        html.setAttribute('data-theme', newTheme);
-        themeToggle.textContent = isDark ? '🌙 Oscuro' : '☀️ Claro';
-        localStorage.setItem('smartTheme', newTheme);
+    // --- MAGIA DEL SPRINT 1: EVENTOS DEL FILTRO ---
+    const handleFilter = (e) => {
+        const maxTime = parseInt(e.target.value);
+        if (maxTime > 0) {
+            clearFilter.classList.remove('hidden');
+            // Aquí está el filtro mágico:
+            const filtered = tasks.filter(task => task.time <= maxTime && !task.completed);
+            UI.render(filtered);
+        } else {
+            clearFilter.classList.add('hidden');
+            UI.render(tasks);
+        }
     };
 
-    // 7. INITIALIZATION
+    // 6. INIT
     const init = () => {
         Storage.load();
         
-        // Cargar tema guardado
-        const savedTheme = localStorage.getItem('smartTheme') || 'dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        themeToggle.textContent = savedTheme === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
-
-        // Event Listeners
+        // Listeners
         form.addEventListener('submit', addTask);
-        themeToggle.addEventListener('click', toggleTheme);
         
+        // Listeners del Sprint 1
+        timeFilter.addEventListener('input', handleFilter);
+        clearFilter.addEventListener('click', () => {
+            timeFilter.value = '';
+            clearFilter.classList.add('hidden');
+            UI.render(tasks);
+        });
+        exitFocusBtn.addEventListener('click', stopFocus);
+
         UI.render();
     };
 
-    // Exponer métodos necesarios para el HTML (onclick events)
-    return { init, toggleComplete, deleteTask };
+    // Exponemos funciones para el HTML
+    return { init, toggleComplete, deleteTask, startFocus };
 })();
 
-// Iniciar la aplicación cuando cargue el DOM
 document.addEventListener('DOMContentLoaded', App.init);
