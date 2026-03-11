@@ -101,6 +101,22 @@ const App = (() => {
     };
 
     // 5. UI & RENDER
+       // --- NUEVO: SISTEMA DE NAVEGACIÓN SPA ---
+    const switchTab = (tabName) => {
+        // Ocultar todas las pestañas
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        // Mostrar la seleccionada
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+
+        // Cambiar el color del botón activo en el menú
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        // Esto busca el botón que se hizo clic usando el evento
+        event.currentTarget.classList.add('active');
+    };
     const UI = {
         updateStats: () => {
             if(tasks.length === 0) return;
@@ -184,3 +200,6 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
+
+    // Exponemos funciones para el HTML
+    return { init, toggleComplete, deleteTask, startFocus, switchTab };
