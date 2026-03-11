@@ -67,7 +67,15 @@ const App = (() => {
             UI.render();
         }
     };
-
+    // --- MAGIA DEL SPRINT 2: MOVER TARJETAS ---
+    const moveTask = (id, newStatus) => {
+        const task = tasks.find(t => t.id === id);
+        if (task) {
+            task.status = newStatus; // Actualiza el estado (ej. de 'bandeja' a 'today')
+            Storage.save();
+            UI.render(); // Recarga la pantalla al instante
+        }
+    };
     // --- MAGIA DEL SPRINT 1: MODO FOCUS ---
     const startFocus = (id) => {
         const task = tasks.find(t => t.id === id);
@@ -135,40 +143,84 @@ const App = (() => {
             statsMessage.textContent = percentage === 100 ? '¡Backlog limpio! 🏆' : '¡Sigue así! 💪';
         },
 
-        // Modificamos el render para aceptar un array filtrado (Sprint 1)
-        render: (filteredTasks = tasks) => {
+                render: (filteredTasks = tasks) => {
+            // 1. Capturamos todas las columnas del HTML
+            const tasksGrid = document.getElementById('tasksGrid'); // La Bandeja
+            const emptyState = document.getElementById('emptyState');
+            const colLater = document.getElementById('column-later'); // Pizarra: Algún día
+            const colWeek = document.getElementById('column-week');   // Pizarra: Semana
+            const colToday = document.getElementById('column-today'); // Pizarra: HOY
+
+            // 2. Limpiamos todas las columnas antes de pintar
             tasksGrid.innerHTML = '';
-            
-            if (filteredTasks.length === 0) {
+            if(colLater) colLater.innerHTML = '';
+            if(colWeek) colWeek.innerHTML = '';
+            if(colToday) colToday.innerHTML = '';
+
+            let tareasEnBandeja = 0;
+
+            // 3. Repartimos las cartas
+            filteredTasks.forEach(task => {
+                // Parche de seguridad por si tienes tareas viejas guardadas
+                if (!task.status) task.status = 'bandeja';
+
+                const card = document.createElement('div');
+                card.className = `task-card ${task.completed ? 'completed' : ''}`;
+                
+                // Si la tarea NO está en la bandeja, la hacemos más compacta
+                if (task.status !== 'bandeja') {
+                    card.classList.add('kanban-card');
+                }
+
+                // El selector mágico para mover la tarjeta
+                const selectHTML = `
+                    <select class="kanban-select" onchange="App.moveTask('${task.id}', this.value)">
+                        <option value="bandeja" ${task.status === 'bandeja' ? 'selected' : ''}>📥 Bandeja</option>
+                        <option value="later" ${task.status === 'later' ? 'selected' : ''}>⏳ Algún día</option>
+                        <option value="week" ${task.status === 'week' ? 'selected' : ''}>📅 Esta Semana</option>
+                        <option value="today" ${task.status === 'today' ? 'selected' : ''}>🔥 Hacer HOY</option>
+                    </select>
+                `;
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="pill ${task.category}">${task.category}</span>
+                        <span class="time-badge">⏱ ${task.time} min</span>
+                    </div>
+                    <h4>${task.title}</h4>
+                    ${selectHTML}
+                    <div class="card-actions" style="margin-top: 10px;">
+                        <button class="btn-icon btn-play" onclick="App.startFocus('${task.id}')" title="Modo Zen">▶</button>
+                        <button class="btn-icon btn-link" onclick="window.open('${task.url}', '_blank')">🔗</button>
+                        <button class="btn-icon btn-done" onclick="App.toggleComplete('${task.id}')">✓</button>
+                        <button class="btn-icon btn-delete" onclick="App.deleteTask('${task.id}')">🗑</button>
+                    </div>
+                `;
+
+                // 4. Inyectamos la tarjeta en su columna correspondiente
+                if (task.status === 'bandeja') {
+                    tasksGrid.appendChild(card);
+                    tareasEnBandeja++;
+                } else if (task.status === 'later' && colLater) {
+                    colLater.appendChild(card);
+                } else if (task.status === 'week' && colWeek) {
+                    colWeek.appendChild(card);
+                } else if (task.status === 'today' && colToday) {
+                    colToday.appendChild(card);
+                }
+            });
+
+            // 5. Mostrar/Ocultar el arbolito de Bandeja Vacía
+            if (tareasEnBandeja === 0) {
                 emptyState.classList.remove('hidden');
                 tasksGrid.classList.add('hidden');
             } else {
                 emptyState.classList.add('hidden');
                 tasksGrid.classList.remove('hidden');
-
-                filteredTasks.forEach(task => {
-                    const card = document.createElement('div');
-                    card.className = `task-card ${task.completed ? 'completed' : ''}`;
-                    // Hemos añadido el botón "▶ Focus" al HTML de la tarjeta
-                    card.innerHTML = `
-                        <div class="card-header">
-                            <span class="pill ${task.category}">${task.category}</span>
-                            <span class="time-badge">⏱ ${task.time} min</span>
-                        </div>
-                        <h4>${task.title}</h4>
-                        <div class="card-actions">
-                            <button class="btn-icon btn-play" onclick="App.startFocus('${task.id}')" title="Modo Zen">▶ Focus</button>
-                            <button class="btn-icon btn-link" onclick="window.open('${task.url}', '_blank')">🔗</button>
-                            <button class="btn-icon btn-done" onclick="App.toggleComplete('${task.id}')">✓</button>
-                            <button class="btn-icon btn-delete" onclick="App.deleteTask('${task.id}')">🗑</button>
-                        </div>
-                    `;
-                    tasksGrid.appendChild(card);
-                });
             }
+
             UI.updateStats();
         }
-    };
 
     // --- MAGIA DEL SPRINT 1: EVENTOS DEL FILTRO ---
     const handleFilter = (e) => {
@@ -204,10 +256,11 @@ const App = (() => {
     };
 
     // ¡ESTE ES EL RETURN! Debe estar justo antes de los símbolos })();
-    return { init, toggleComplete, deleteTask, startFocus, switchTab };
+    return { init, toggleComplete, deleteTask, startFocus, switchTab,moveTask};
 
 })(); // <-- ESTA LÍNEA CIERRA EL MÓDULO APP.
 
 // Iniciar la aplicación cuando cargue el DOM (Esto va afuera)
 document.addEventListener('DOMContentLoaded', App.init);
+
 
