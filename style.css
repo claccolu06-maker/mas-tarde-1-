@@ -239,3 +239,16 @@ body { margin: 0; padding: 0; overflow: hidden; /* Evita scroll en toda la pági
     color: var(--text-muted); border: 1px solid var(--border-color);
     border-radius: 4px; font-size: 0.8rem; outline: none; margin-top: 0.5rem;
 }
+
+/* =========================================
+   PARCHE DE EMERGENCIA: MÓVILES (Responsividad)
+   ========================================= */
+@media (max-width: 768px) {
+    .dashboard-layout { flex-direction: column; overflow-y: auto; height: 100%; }
+    body { overflow: auto; }
+    .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); padding: 1rem; }
+    .nav-menu { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+    .main-content { padding: 1rem; overflow-y: visible; }
+    .kanban-board { flex-direction: column; }
+    .kanban-column { width: 100%; }
+}
