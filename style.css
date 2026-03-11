@@ -208,3 +208,34 @@ body { margin: 0; padding: 0; overflow: hidden; /* Evita scroll en toda la pági
 .tab-content { display: none; animation: fadeIn 0.3s ease; }
 .tab-content.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* =========================================
+   SPRINT 2: PIZARRA KANBAN
+   ========================================= */
+.kanban-board {
+    display: flex; gap: 1.5rem; overflow-x: auto; padding-bottom: 1rem;
+    min-height: 60vh;
+}
+.kanban-column {
+    flex: 1; min-width: 280px; background: var(--input-bg);
+    border-radius: var(--radius); padding: 1rem;
+    border: 1px solid var(--border-color); display: flex; flex-direction: column;
+}
+.kanban-column.active-column { border: 2px dashed var(--cta-green); background: rgba(34, 197, 94, 0.02); }
+.column-title {
+    font-size: 1rem; font-weight: 600; margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);
+}
+.kanban-cards { display: flex; flex-direction: column; gap: 1rem; flex-grow: 1; }
+
+/* Tarjetas versión mini para el Kanban */
+.kanban-card {
+    background: var(--bg-card); padding: 1rem; border-radius: 8px;
+    border: 1px solid var(--border-color); border-left: 4px solid var(--accent-blue);
+}
+.kanban-card h4 { font-size: 0.95rem; margin-bottom: 0.5rem; }
+.kanban-select {
+    width: 100%; padding: 0.3rem; background: var(--bg-main);
+    color: var(--text-muted); border: 1px solid var(--border-color);
+    border-radius: 4px; font-size: 0.8rem; outline: none; margin-top: 0.5rem;
+}
