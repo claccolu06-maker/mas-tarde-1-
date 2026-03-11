@@ -112,7 +112,15 @@ body {
 
 .time-badge { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; font-weight: 500; }
 
-.task-card h4 { font-size: 1.1rem; font-weight: 600; line-height: 1.3; }
+.task-card h4, .kanban-card h4 { 
+    font-size: 1.1rem; 
+    font-weight: 600; 
+    line-height: 1.3;
+    /* Las 3 líneas mágicas contra textos largos: */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 .card-actions { display: flex; gap: 0.5rem; margin-top: auto; }
 .btn-icon { 
@@ -252,3 +260,4 @@ body { margin: 0; padding: 0; overflow: hidden; /* Evita scroll en toda la pági
     .kanban-board { flex-direction: column; }
     .kanban-column { width: 100%; }
 }
+
