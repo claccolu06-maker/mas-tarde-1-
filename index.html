@@ -82,26 +82,39 @@
                 <div id="tasksGrid" class="tasks-grid"></div>
             </section>
 
-            <!-- PESTAÑA 2: PIZARRA (En construcción) -->
+                        <!-- PESTAÑA 2: PIZARRA (Fake Kanban) -->
             <section id="tab-pizarra" class="tab-content hidden">
-                <h2>📋 Mi Pizarra (Kanban)</h2>
-                <p>Próximamente: Aquí organizaremos la semana.</p>
-            </section>
+                <header class="tab-header">
+                    <h2>📋 Mi Pizarra de Acción</h2>
+                    <p class="subtitle">Planifica tu semana. Mueve las tarjetas a la columna correspondiente.</p>
+                </header>
 
-            <!-- PESTAÑA 3: HISTORIAL (En construcción) -->
-            <section id="tab-historial" class="tab-content hidden">
-                <h2>📊 Historial y Estadísticas</h2>
-                <p>Próximamente: Gráficos de tu rendimiento.</p>
-            </section>
+                <div class="kanban-board">
+                    <!-- Columna 1 -->
+                    <div class="kanban-column">
+                        <h3 class="column-title">⏳ Algún día</h3>
+                        <div class="kanban-cards" id="column-later">
+                            <!-- JS inyectará tarjetas aquí -->
+                        </div>
+                    </div>
 
-            <!-- PESTAÑA 4: AJUSTES (En construcción) -->
-            <section id="tab-ajustes" class="tab-content hidden">
-                <h2>⚙️ Ajustes</h2>
-                <p>Próximamente: Configura tu Modo Zen y Notificaciones.</p>
-            </section>
+                    <!-- Columna 2 -->
+                    <div class="kanban-column">
+                        <h3 class="column-title">📅 Esta Semana</h3>
+                        <div class="kanban-cards" id="column-week">
+                            <!-- JS inyectará tarjetas aquí -->
+                        </div>
+                    </div>
 
-        </main>
-    </div>
+                    <!-- Columna 3 -->
+                    <div class="kanban-column active-column">
+                        <h3 class="column-title">🔥 Hacer HOY</h3>
+                        <div class="kanban-cards" id="column-today">
+                            <!-- JS inyectará tarjetas aquí -->
+                        </div>
+                    </div>
+                </div>
+            </section>
 
     <!-- MODO FOCUS (Pantalla Completa - Permanece igual) -->
     <div id="focusOverlay" class="focus-overlay hidden">
@@ -116,3 +129,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+
