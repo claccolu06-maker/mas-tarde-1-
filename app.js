@@ -37,13 +37,14 @@ const App = (() => {
     // 4. LOGIC (CRUD & SPRINT 1)
     const addTask = (e) => {
         e.preventDefault();
-        const newTask = {
+                const newTask = {
             id: Date.now().toString(),
             url: document.getElementById('urlInput').value,
             title: document.getElementById('titleInput').value,
             category: document.getElementById('categoryInput').value,
-            time: parseInt(document.getElementById('timeInput').value), // Guardamos como número
+            time: parseInt(document.getElementById('timeInput').value),
             completed: false,
+            status: 'bandeja', // <--- ¡LA MAGIA NUEVA!
             createdAt: new Date().toISOString()
         };
         tasks.unshift(newTask);
@@ -101,21 +102,28 @@ const App = (() => {
     };
 
     // 5. UI & RENDER
-       // --- NUEVO: SISTEMA DE NAVEGACIÓN SPA ---
-    const switchTab = (tabName) => {
-        // Ocultar todas las pestañas
+          // --- SISTEMA DE NAVEGACIÓN SPA (CORREGIDO) ---
+    const switchTab = (tabName, btnElement) => {
+        // 1. Ocultar todas las pestañas
         document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
             tab.classList.remove('active');
         });
-        // Mostrar la seleccionada
-        document.getElementById(`tab-${tabName}`).classList.add('active');
+        
+        // 2. Mostrar solo la pestaña seleccionada
+        const selectedTab = document.getElementById(`tab-${tabName}`);
+        selectedTab.classList.remove('hidden');
+        selectedTab.classList.add('active');
 
-        // Cambiar el color del botón activo en el menú
+        // 3. Quitar el color azul de todos los botones
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        // Esto busca el botón que se hizo clic usando el evento
-        event.currentTarget.classList.add('active');
+        
+        // 4. Poner el color azul solo al botón clickeado
+        if(btnElement) {
+            btnElement.classList.add('active');
+        }
     };
     const UI = {
         updateStats: () => {
@@ -202,3 +210,4 @@ const App = (() => {
 
 // Iniciar la aplicación cuando cargue el DOM (Esto va afuera)
 document.addEventListener('DOMContentLoaded', App.init);
+
