@@ -17,10 +17,10 @@
                 <h1>Smart-Time <span>Hub</span></h1>
             </div>
             <nav class="nav-menu">
-                <button class="nav-btn active" onclick="App.switchTab('bandeja')">📥 Bandeja</button>
-                <button class="nav-btn" onclick="App.switchTab('pizarra')">📋 Mi Pizarra</button>
-                <button class="nav-btn" onclick="App.switchTab('historial')">📊 Historial</button>
-                <button class="nav-btn" onclick="App.switchTab('ajustes')">⚙️ Ajustes</button>
+                <button class="nav-btn active" onclick="App.switchTab('bandeja', this)">📥 Bandeja</button>
+                <button class="nav-btn" onclick="App.switchTab('pizarra', this)">📋 Mi Pizarra</button>
+                <button class="nav-btn" onclick="App.switchTab('historial', this)">📊 Historial</button>
+                <button class="nav-btn" onclick="App.switchTab('ajustes', this)">⚙️ Ajustes</button>
             </nav>
             <div class="sidebar-footer">
                 <button id="themeToggle" class="theme-btn">☀️ Claro</button>
@@ -129,4 +129,5 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
