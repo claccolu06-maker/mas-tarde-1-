@@ -176,14 +176,14 @@ const App = (() => {
         }
     };
 
-    // 6. INIT
+     // 6. INIT
     const init = () => {
         Storage.load();
         
-        // Listeners
+        // Listeners del Formulario
         form.addEventListener('submit', addTask);
         
-        // Listeners del Sprint 1
+        // Listeners del Sprint 1 (Filtro Mágico)
         timeFilter.addEventListener('input', handleFilter);
         clearFilter.addEventListener('click', () => {
             timeFilter.value = '';
@@ -195,11 +195,10 @@ const App = (() => {
         UI.render();
     };
 
-    // Exponemos funciones para el HTML
-    return { init, toggleComplete, deleteTask, startFocus };
-})();
-
-document.addEventListener('DOMContentLoaded', App.init);
-
-    // Exponemos funciones para el HTML
+    // ¡ESTE ES EL RETURN! Debe estar justo antes de los símbolos })();
     return { init, toggleComplete, deleteTask, startFocus, switchTab };
+
+})(); // <-- ESTA LÍNEA CIERRA EL MÓDULO APP.
+
+// Iniciar la aplicación cuando cargue el DOM (Esto va afuera)
+document.addEventListener('DOMContentLoaded', App.init);
