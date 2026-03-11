@@ -3,102 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart-Time Hub | Tu espacio de progreso</title>
-    <!-- Tipografía Poppins -->
+    <title>Smart-Time Hub | Team A</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
+    <!-- CONTENEDOR PRINCIPAL DEL DASHBOARD -->
+    <div class="dashboard-layout">
         
-        <!-- HEADER & MARKETING -->
-        <header class="app-header">
-            <div class="header-top">
-                <div class="logo">
-                    <h1>Smart-Time <span>Hub</span></h1>
-                </div>
-                <button id="themeToggle" class="theme-btn" aria-label="Cambiar tema">☀️ Claro</button>
+        <!-- SPRINT 1: MENÚ LATERAL -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>Smart-Time <span>Hub</span></h1>
             </div>
-            <p class="subtitle">Convierte tus enlaces guardados en progreso real.</p>
+            <nav class="nav-menu">
+                <button class="nav-btn active" onclick="App.switchTab('bandeja')">📥 Bandeja</button>
+                <button class="nav-btn" onclick="App.switchTab('pizarra')">📋 Mi Pizarra</button>
+                <button class="nav-btn" onclick="App.switchTab('historial')">📊 Historial</button>
+                <button class="nav-btn" onclick="App.switchTab('ajustes')">⚙️ Ajustes</button>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="themeToggle" class="theme-btn">☀️ Claro</button>
+            </div>
+        </aside>
+
+        <!-- ÁREA DE CONTENIDO DINÁMICO -->
+        <main class="main-content">
             
-            <!-- GAMIFICACIÓN: Barra de Progreso -->
-            <div class="stats-container">
-                <div class="stats-text">
-                    <span id="statsMessage">¡Vamos a por el día!</span>
-                    <span id="statsNumbers">0/0 completadas</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-            </div>
-        </header>
+            <!-- PESTAÑA 1: LA BANDEJA (Lo que ya programamos) -->
+            <section id="tab-bandeja" class="tab-content active">
+                <header class="tab-header">
+                    <h2>Bandeja de Entrada</h2>
+                    <p class="subtitle">Guarda tus enlaces y organízalos por tiempo.</p>
+                </header>
 
-        <!-- FORMULARIO DE ENTRADA (Cero Fricción) -->
-        <section class="input-section">
-            <form id="taskForm" class="task-form">
-                <div class="input-group full-width">
-                    <label for="urlInput">URL del contenido</label>
-                    <input type="url" id="urlInput" placeholder="https://..." required>
+                <div class="stats-container">
+                    <div class="stats-text">
+                        <span id="statsMessage">¡Vamos a por el día!</span>
+                        <span id="statsNumbers">0/0 completadas</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
                 </div>
-                <div class="input-group">
-                    <label for="titleInput">¿De qué trata?</label>
-                    <input type="text" id="titleInput" placeholder="Ej. Curso de JS" required>
-                </div>
-                <div class="input-group">
-                    <label for="categoryInput">Categoría</label>
-                    <select id="categoryInput">
-                        <option value="video">🎥 Video</option>
-                        <option value="articulo">📝 Artículo</option>
-                        <option value="curso">🎓 Curso</option>
-                        <option value="proyecto">🚀 Proyecto</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label for="timeInput">Minutos (Aprox)</label>
-                    <input type="number" id="timeInput" placeholder="30" min="1" required>
-                </div>
-                <button type="submit" class="cta-button">Guardar para después ✨</button>
-            </form>
-        </section>
 
-        <!-- DASHBOARD DE TARJETAS -->
-        <main class="dashboard">
-            <div class="dashboard-header">
-                <h2>Tu Backlog</h2>
-                <span id="nudgeMessage" class="nudge hidden">Tienes tareas de hace más de 30 días 👀</span>
-            </div>
-                        <!-- SPRINT 1: El Filtro Mágico -->
-            <div class="magic-filter">
-                <label for="timeFilter">⏱️ ¿Cuánto tiempo libre tienes ahora?</label>
-                <div class="filter-controls">
-                    <input type="number" id="timeFilter" placeholder="Ej. 15 (minutos)" min="1">
-                    <button id="clearFilter" class="btn-icon btn-link hidden">✖ Limpiar</button>
-                </div>
-            </div>
-            
-            <div id="emptyState" class="empty-state">
-                <div class="empty-icon">🌱</div>
-                <h3>Tu mente está libre.</h3>
-                <p>Guarda algo que quieras hacer cuando tengas tiempo libre.</p>
-            </div>
+                <form id="taskForm" class="task-form">
+                    <div class="input-group full-width">
+                        <input type="url" id="urlInput" placeholder="URL del contenido (https://...)" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="titleInput" placeholder="¿De qué trata?" required>
+                    </div>
+                    <div class="input-group">
+                        <select id="categoryInput">
+                            <option value="video">🎥 Video</option>
+                            <option value="articulo">📝 Artículo</option>
+                            <option value="curso">🎓 Curso</option>
+                            <option value="proyecto">🚀 Proyecto</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="timeInput" placeholder="Minutos" min="1" required>
+                    </div>
+                    <button type="submit" class="cta-button">Guardar ✨</button>
+                </form>
 
-            <div id="tasksGrid" class="tasks-grid">
-                <!-- Las tarjetas se inyectan aquí con JS -->
-            </div>
+                <div class="magic-filter">
+                    <label for="timeFilter">⏱️ ¿Cuánto tiempo libre tienes?</label>
+                    <div class="filter-controls">
+                        <input type="number" id="timeFilter" placeholder="Ej. 15" min="1">
+                        <button id="clearFilter" class="btn-icon btn-link hidden">✖ Limpiar</button>
+                    </div>
+                </div>
+
+                <div id="emptyState" class="empty-state hidden">
+                    <div class="empty-icon">🌱</div>
+                    <h3>Bandeja vacía.</h3>
+                </div>
+
+                <div id="tasksGrid" class="tasks-grid"></div>
+            </section>
+
+            <!-- PESTAÑA 2: PIZARRA (En construcción) -->
+            <section id="tab-pizarra" class="tab-content hidden">
+                <h2>📋 Mi Pizarra (Kanban)</h2>
+                <p>Próximamente: Aquí organizaremos la semana.</p>
+            </section>
+
+            <!-- PESTAÑA 3: HISTORIAL (En construcción) -->
+            <section id="tab-historial" class="tab-content hidden">
+                <h2>📊 Historial y Estadísticas</h2>
+                <p>Próximamente: Gráficos de tu rendimiento.</p>
+            </section>
+
+            <!-- PESTAÑA 4: AJUSTES (En construcción) -->
+            <section id="tab-ajustes" class="tab-content hidden">
+                <h2>⚙️ Ajustes</h2>
+                <p>Próximamente: Configura tu Modo Zen y Notificaciones.</p>
+            </section>
+
         </main>
     </div>
 
-        <!-- SPRINT 1: Modo Focus (Cero Distracciones) -->
+    <!-- MODO FOCUS (Pantalla Completa - Permanece igual) -->
     <div id="focusOverlay" class="focus-overlay hidden">
         <div class="focus-content">
             <span class="focus-badge">MODO ZEN ACTIVADO 🧘‍♂️</span>
-            <h2 id="focusTitle">Leyendo Artículo de Programación</h2>
-            <div id="focusTimer" class="timer-display">15:00</div>
+            <h2 id="focusTitle">Tarea</h2>
+            <div id="focusTimer" class="timer-display">00:00</div>
             <button id="exitFocus" class="cta-button danger">Abandonar Sesión</button>
         </div>
     </div>
+
     <script src="app.js"></script>
 </body>
-
 </html>
-
