@@ -218,6 +218,15 @@ const App = (() => {
     // 6. INIT
     const init = () => {
         Storage.load();
+                const themeBtn = document.getElementById('themeToggle');
+        if(themeBtn) {
+            themeBtn.addEventListener('click', () => {
+                const html = document.documentElement;
+                const isDark = html.getAttribute('data-theme') === 'dark';
+                html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+                themeBtn.textContent = isDark ? '🌙 Oscuro' : '☀️ Claro';
+            });
+        }
         
         if(form) form.addEventListener('submit', addTask);
         if(timeFilter) timeFilter.addEventListener('input', handleFilter);
@@ -237,3 +246,4 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
+
