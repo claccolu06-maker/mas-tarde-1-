@@ -166,3 +166,45 @@ body {
 /* Botón de Play en la tarjeta */
 .btn-play { background: rgba(56, 189, 248, 0.1); color: var(--accent-blue); }
 .btn-play:hover { background: var(--accent-blue); color: white; }
+
+/* =========================================
+   NUEVO LAYOUT: DASHBOARD & SIDEBAR
+   ========================================= */
+body { margin: 0; padding: 0; overflow: hidden; /* Evita scroll en toda la página */ }
+
+.dashboard-layout {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Menú Lateral */
+.sidebar {
+    width: 260px;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+}
+.sidebar .logo { margin-bottom: 2rem; }
+.nav-menu { display: flex; flex-direction: column; gap: 0.5rem; flex-grow: 1; }
+.nav-btn {
+    background: transparent; border: none; color: var(--text-muted);
+    text-align: left; padding: 0.8rem 1rem; border-radius: 8px;
+    font-size: 1rem; font-weight: 500; cursor: pointer; transition: 0.2s; font-family: inherit;
+}
+.nav-btn:hover { background: var(--input-bg); color: var(--text-main); }
+.nav-btn.active { background: rgba(56, 189, 248, 0.1); color: var(--accent-blue); font-weight: 600; }
+.sidebar-footer { margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1rem; }
+
+/* Área Principal */
+.main-content {
+    flex-grow: 1;
+    background: var(--bg-main);
+    overflow-y: auto; /* Solo scrollea el contenido, no el menú */
+    padding: 2rem 3rem;
+}
+.tab-content { display: none; animation: fadeIn 0.3s ease; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
