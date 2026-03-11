@@ -1,29 +1,24 @@
 /**
- * Smart-Time Hub | Core Application Logic
- * Sprint 1: Filtro Mágico + Focus Mode Integrado
+ * Smart-Time Hub | Team A
+ * Sprint 1 & 2: Dashboard SPA + Kanban Pizarra
  */
 
 const App = (() => {
-    // 1. STATE (Estado)
+    // 1. STATE (Estado de la App)
     let tasks = [];
-    let focusInterval; // Guarda el temporizador
+    let focusInterval;
 
     // 2. DOM ELEMENTS
     const form = document.getElementById('taskForm');
-    const tasksGrid = document.getElementById('tasksGrid');
-    const emptyState = document.getElementById('emptyState');
-    const themeToggle = document.getElementById('themeToggle');
-    const progressFill = document.getElementById('progressFill');
-    const statsMessage = document.getElementById('statsMessage');
-    const statsNumbers = document.getElementById('statsNumbers');
-    
-    // Elementos del Sprint 1
     const timeFilter = document.getElementById('timeFilter');
     const clearFilter = document.getElementById('clearFilter');
     const focusOverlay = document.getElementById('focusOverlay');
     const focusTitle = document.getElementById('focusTitle');
     const focusTimer = document.getElementById('focusTimer');
     const exitFocusBtn = document.getElementById('exitFocus');
+    const progressFill = document.getElementById('progressFill');
+    const statsMessage = document.getElementById('statsMessage');
+    const statsNumbers = document.getElementById('statsNumbers');
 
     // 3. STORAGE
     const Storage = {
@@ -34,17 +29,17 @@ const App = (() => {
         }
     };
 
-    // 4. LOGIC (CRUD & SPRINT 1)
+    // 4. LOGIC MODULE
     const addTask = (e) => {
         e.preventDefault();
-                const newTask = {
+        const newTask = {
             id: Date.now().toString(),
             url: document.getElementById('urlInput').value,
             title: document.getElementById('titleInput').value,
             category: document.getElementById('categoryInput').value,
             time: parseInt(document.getElementById('timeInput').value),
             completed: false,
-            status: 'bandeja', // <--- ¡LA MAGIA NUEVA!
+            status: 'bandeja', // Empieza siempre en la bandeja
             createdAt: new Date().toISOString()
         };
         tasks.unshift(newTask);
@@ -55,9 +50,11 @@ const App = (() => {
 
     const toggleComplete = (id) => {
         const task = tasks.find(t => t.id === id);
-        task.completed = !task.completed;
-        Storage.save();
-        UI.render();
+        if (task) {
+            task.completed = !task.completed;
+            Storage.save();
+            UI.render();
+        }
     };
 
     const deleteTask = (id) => {
@@ -67,49 +64,65 @@ const App = (() => {
             UI.render();
         }
     };
-    // --- MAGIA DEL SPRINT 2: MOVER TARJETAS ---
+
     const moveTask = (id, newStatus) => {
         const task = tasks.find(t => t.id === id);
         if (task) {
-            task.status = newStatus; // Actualiza el estado (ej. de 'bandeja' a 'today')
+            task.status = newStatus;
             Storage.save();
-            UI.render(); // Recarga la pantalla al instante
+            UI.render();
         }
     };
-    // --- MAGIA DEL SPRINT 1: MODO FOCUS ---
+
+    // --- MODO FOCUS ---
     const startFocus = (id) => {
         const task = tasks.find(t => t.id === id);
         if(!task) return;
 
-        // Preparamos la pantalla
         focusTitle.textContent = task.title;
         focusOverlay.classList.remove('hidden');
         
-        let timeLeft = task.time * 60; // Convertimos minutos a segundos
-
-        // Función que se repite cada 1 segundo (1000 ms)
+        let timeLeft = task.time * 60;
         focusInterval = setInterval(() => {
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
-            
-            // Formateamos para que siempre tenga 2 dígitos (ej: 09:05)
             focusTimer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             
             if (timeLeft <= 0) {
                 clearInterval(focusInterval);
                 focusTimer.textContent = "00:00";
-                alert('¡Tiempo terminado! Gran trabajo.');
+                alert('¡Tiempo terminado!');
             }
             timeLeft--;
         }, 1000);
     };
 
     const stopFocus = () => {
-        clearInterval(focusInterval); // Detenemos el reloj
-        focusOverlay.classList.add('hidden'); // Ocultamos la pantalla
+        clearInterval(focusInterval);
+        focusOverlay.classList.add('hidden');
     };
 
-       // 5. UI & RENDER
+    // --- NAVEGACIÓN SPA ---
+    const switchTab = (tabName, btnElement) => {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+            tab.classList.remove('active');
+        });
+        
+        const selectedTab = document.getElementById(`tab-${tabName}`);
+        if(selectedTab) {
+            selectedTab.classList.remove('hidden');
+            selectedTab.classList.add('active');
+        }
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        if(btnElement) btnElement.classList.add('active');
+    };
+
+    // 5. UI & RENDER
     const UI = {
         updateStats: () => {
             if(tasks.length === 0) return;
@@ -117,7 +130,7 @@ const App = (() => {
             const percentage = (completed / tasks.length) * 100;
             progressFill.style.width = `${percentage}%`;
             statsNumbers.textContent = `${completed}/${tasks.length} completadas`;
-            statsMessage.textContent = percentage === 100 ? '¡Backlog limpio! 🏆' : '¡Sigue así! 💪';
+            statsMessage.textContent = percentage === 100 ? '¡Todo limpio! 🏆' : '¡Sigue así! 💪';
         },
 
         render: (filteredTasks = tasks) => {
@@ -127,8 +140,7 @@ const App = (() => {
             const colWeek = document.getElementById('column-week');
             const colToday = document.getElementById('column-today');
 
-            // Limpiar contenedores
-            tasksGrid.innerHTML = '';
+            if(tasksGrid) tasksGrid.innerHTML = '';
             if(colLater) colLater.innerHTML = '';
             if(colWeek) colWeek.innerHTML = '';
             if(colToday) colToday.innerHTML = '';
@@ -136,7 +148,7 @@ const App = (() => {
             let tareasEnBandeja = 0;
 
             filteredTasks.forEach(task => {
-                if (!task.status) task.status = 'bandeja'; // Parche de seguridad
+                if (!task.status) task.status = 'bandeja';
 
                 const card = document.createElement('div');
                 card.className = `task-card ${task.completed ? 'completed' : ''}`;
@@ -166,8 +178,7 @@ const App = (() => {
                     </div>
                 `;
 
-                // Distribuir en las columnas
-                if (task.status === 'bandeja') {
+                if (task.status === 'bandeja' && tasksGrid) {
                     tasksGrid.appendChild(card);
                     tareasEnBandeja++;
                 } else if (task.status === 'later' && colLater) {
@@ -179,31 +190,23 @@ const App = (() => {
                 }
             });
 
-            // Mostrar/Ocultar Bandeja Vacía
-            if (tareasEnBandeja === 0) {
-                emptyState.classList.remove('hidden');
-                tasksGrid.classList.add('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-                tasksGrid.classList.remove('hidden');
+            if(emptyState && tasksGrid) {
+                if (tareasEnBandeja === 0) {
+                    emptyState.classList.remove('hidden');
+                    tasksGrid.classList.add('hidden');
+                } else {
+                    emptyState.classList.add('hidden');
+                    tasksGrid.classList.remove('hidden');
+                }
             }
-
             UI.updateStats();
         }
-    }; 
-        // --- SISTEMA DE NAVEGACIÓN SPA ---
-    const switchTab = (tabName, btnElement) => { ... }
-    
-    // --- MAGIA DEL SPRINT 2: MOVER TARJETAS ---
-    const moveTask = (id, newStatus) => { ... }
+    };
 
-    // etc...
-    // --- MAGIA DEL SPRINT 1: EVENTOS DEL FILTRO ---
     const handleFilter = (e) => {
         const maxTime = parseInt(e.target.value);
         if (maxTime > 0) {
             clearFilter.classList.remove('hidden');
-            // Aquí está el filtro mágico:
             const filtered = tasks.filter(task => task.time <= maxTime && !task.completed);
             UI.render(filtered);
         } else {
@@ -212,32 +215,25 @@ const App = (() => {
         }
     };
 
-     // 6. INIT
+    // 6. INIT
     const init = () => {
         Storage.load();
         
-        // Listeners del Formulario
-        form.addEventListener('submit', addTask);
-        
-        // Listeners del Sprint 1 (Filtro Mágico)
-        timeFilter.addEventListener('input', handleFilter);
-        clearFilter.addEventListener('click', () => {
+        if(form) form.addEventListener('submit', addTask);
+        if(timeFilter) timeFilter.addEventListener('input', handleFilter);
+        if(clearFilter) clearFilter.addEventListener('click', () => {
             timeFilter.value = '';
             clearFilter.classList.add('hidden');
             UI.render(tasks);
         });
-        exitFocusBtn.addEventListener('click', stopFocus);
+        if(exitFocusBtn) exitFocusBtn.addEventListener('click', stopFocus);
 
         UI.render();
     };
 
-    // ¡ESTE ES EL RETURN! Debe estar justo antes de los símbolos })();
-    return { init, toggleComplete, deleteTask, startFocus, switchTab,moveTask};
+    // EXPORTAR FUNCIONES AL HTML
+    return { init, toggleComplete, deleteTask, startFocus, switchTab, moveTask };
 
-})(); // <-- ESTA LÍNEA CIERRA EL MÓDULO APP.
+})();
 
-// Iniciar la aplicación cuando cargue el DOM (Esto va afuera)
 document.addEventListener('DOMContentLoaded', App.init);
-
-
-
