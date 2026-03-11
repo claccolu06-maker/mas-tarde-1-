@@ -109,30 +109,7 @@ const App = (() => {
         focusOverlay.classList.add('hidden'); // Ocultamos la pantalla
     };
 
-    // 5. UI & RENDER
-          // --- SISTEMA DE NAVEGACIÓN SPA (CORREGIDO) ---
-    const switchTab = (tabName, btnElement) => {
-        // 1. Ocultar todas las pestañas
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.add('hidden');
-            tab.classList.remove('active');
-        });
-        
-        // 2. Mostrar solo la pestaña seleccionada
-        const selectedTab = document.getElementById(`tab-${tabName}`);
-        selectedTab.classList.remove('hidden');
-        selectedTab.classList.add('active');
-
-        // 3. Quitar el color azul de todos los botones
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        
-        // 4. Poner el color azul solo al botón clickeado
-        if(btnElement) {
-            btnElement.classList.add('active');
-        }
-    };
+       // 5. UI & RENDER
     const UI = {
         updateStats: () => {
             if(tasks.length === 0) return;
@@ -143,15 +120,14 @@ const App = (() => {
             statsMessage.textContent = percentage === 100 ? '¡Backlog limpio! 🏆' : '¡Sigue así! 💪';
         },
 
-                render: (filteredTasks = tasks) => {
-            // 1. Capturamos todas las columnas del HTML
-            const tasksGrid = document.getElementById('tasksGrid'); // La Bandeja
+        render: (filteredTasks = tasks) => {
+            const tasksGrid = document.getElementById('tasksGrid');
             const emptyState = document.getElementById('emptyState');
-            const colLater = document.getElementById('column-later'); // Pizarra: Algún día
-            const colWeek = document.getElementById('column-week');   // Pizarra: Semana
-            const colToday = document.getElementById('column-today'); // Pizarra: HOY
+            const colLater = document.getElementById('column-later');
+            const colWeek = document.getElementById('column-week');
+            const colToday = document.getElementById('column-today');
 
-            // 2. Limpiamos todas las columnas antes de pintar
+            // Limpiar contenedores
             tasksGrid.innerHTML = '';
             if(colLater) colLater.innerHTML = '';
             if(colWeek) colWeek.innerHTML = '';
@@ -159,20 +135,13 @@ const App = (() => {
 
             let tareasEnBandeja = 0;
 
-            // 3. Repartimos las cartas
             filteredTasks.forEach(task => {
-                // Parche de seguridad por si tienes tareas viejas guardadas
-                if (!task.status) task.status = 'bandeja';
+                if (!task.status) task.status = 'bandeja'; // Parche de seguridad
 
                 const card = document.createElement('div');
                 card.className = `task-card ${task.completed ? 'completed' : ''}`;
-                
-                // Si la tarea NO está en la bandeja, la hacemos más compacta
-                if (task.status !== 'bandeja') {
-                    card.classList.add('kanban-card');
-                }
+                if (task.status !== 'bandeja') card.classList.add('kanban-card');
 
-                // El selector mágico para mover la tarjeta
                 const selectHTML = `
                     <select class="kanban-select" onchange="App.moveTask('${task.id}', this.value)">
                         <option value="bandeja" ${task.status === 'bandeja' ? 'selected' : ''}>📥 Bandeja</option>
@@ -197,7 +166,7 @@ const App = (() => {
                     </div>
                 `;
 
-                // 4. Inyectamos la tarjeta en su columna correspondiente
+                // Distribuir en las columnas
                 if (task.status === 'bandeja') {
                     tasksGrid.appendChild(card);
                     tareasEnBandeja++;
@@ -210,7 +179,7 @@ const App = (() => {
                 }
             });
 
-            // 5. Mostrar/Ocultar el arbolito de Bandeja Vacía
+            // Mostrar/Ocultar Bandeja Vacía
             if (tareasEnBandeja === 0) {
                 emptyState.classList.remove('hidden');
                 tasksGrid.classList.add('hidden');
@@ -221,7 +190,14 @@ const App = (() => {
 
             UI.updateStats();
         }
+    }; 
+        // --- SISTEMA DE NAVEGACIÓN SPA ---
+    const switchTab = (tabName, btnElement) => { ... }
+    
+    // --- MAGIA DEL SPRINT 2: MOVER TARJETAS ---
+    const moveTask = (id, newStatus) => { ... }
 
+    // etc...
     // --- MAGIA DEL SPRINT 1: EVENTOS DEL FILTRO ---
     const handleFilter = (e) => {
         const maxTime = parseInt(e.target.value);
@@ -262,5 +238,6 @@ const App = (() => {
 
 // Iniciar la aplicación cuando cargue el DOM (Esto va afuera)
 document.addEventListener('DOMContentLoaded', App.init);
+
 
 
