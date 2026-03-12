@@ -103,6 +103,31 @@ const App = (() => {
         clearInterval(focusInterval);
         focusOverlay.classList.add('hidden');
     };
+        // --- AJUSTES: EXPORTAR DATOS ---
+    const exportData = () => {
+        if(tasks.length === 0) {
+            alert("No hay datos para exportar.");
+            return;
+        }
+        // Creamos un archivo descargable con todo tu LocalStorage
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "smart_time_backup.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    };
+
+    // --- AJUSTES: BORRAR TODO ---
+    const clearAllData = () => {
+        if(confirm('🚨 ¡ATENCIÓN! Vas a borrar TODAS tus tareas y el historial para siempre. ¿Estás absolutamente seguro?')) {
+            tasks = []; // Vaciamos el array
+            Storage.save(); // Guardamos el array vacío
+            UI.render(); // Actualizamos la pantalla
+            alert('Sistema formateado correctamente. ¡Un nuevo comienzo!');
+        }
+    };
 
     // --- NAVEGACIÓN SPA ---
     const switchTab = (tabName, btnElement) => {
@@ -319,8 +344,9 @@ const App = (() => {
     };
 
     // EXPORTAR AL HTML
-    return { init, toggleComplete, deleteTask, startFocus, switchTab, moveTask };
+      return { init, toggleComplete, deleteTask, startFocus, switchTab, moveTask, exportData, clearAllData };
 
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
+
