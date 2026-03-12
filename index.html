@@ -4,14 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart-Time Hub | Team A</title>
+    
+    <!-- Tipografía Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Librería para Gráficos (Chart.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Tus Estilos -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- CONTENEDOR PRINCIPAL DEL DASHBOARD -->
     <div class="dashboard-layout">
         
-        <!-- SPRINT 1: MENÚ LATERAL -->
+        <!-- ================= MENÚ LATERAL ================= -->
         <aside class="sidebar">
             <div class="logo">
                 <h1>Smart-Time <span>Hub</span></h1>
@@ -27,10 +34,10 @@
             </div>
         </aside>
 
-        <!-- ÁREA DE CONTENIDO DINÁMICO -->
+        <!-- ================= ÁREA DE CONTENIDO ================= -->
         <main class="main-content">
             
-            <!-- PESTAÑA 1: LA BANDEJA (Lo que ya programamos) -->
+            <!-- PESTAÑA 1: LA BANDEJA (Captura) -->
             <section id="tab-bandeja" class="tab-content active">
                 <header class="tab-header">
                     <h2>Bandeja de Entrada</h2>
@@ -77,46 +84,83 @@
                 <div id="emptyState" class="empty-state hidden">
                     <div class="empty-icon">🌱</div>
                     <h3>Bandeja vacía.</h3>
+                    <p>Guarda algo para después.</p>
                 </div>
 
                 <div id="tasksGrid" class="tasks-grid"></div>
             </section>
 
-                        <!-- PESTAÑA 2: PIZARRA (Fake Kanban) -->
+            <!-- PESTAÑA 2: PIZARRA (Kanban) -->
             <section id="tab-pizarra" class="tab-content hidden">
                 <header class="tab-header">
                     <h2>📋 Mi Pizarra de Acción</h2>
-                    <p class="subtitle">Planifica tu semana. Mueve las tarjetas a la columna correspondiente.</p>
+                    <p class="subtitle">Planifica tu semana. Mueve las tareas desde la bandeja hasta aquí.</p>
                 </header>
 
                 <div class="kanban-board">
-                    <!-- Columna 1 -->
                     <div class="kanban-column">
                         <h3 class="column-title">⏳ Algún día</h3>
-                        <div class="kanban-cards" id="column-later">
-                            <!-- JS inyectará tarjetas aquí -->
-                        </div>
+                        <div class="kanban-cards" id="column-later"></div>
                     </div>
-
-                    <!-- Columna 2 -->
                     <div class="kanban-column">
                         <h3 class="column-title">📅 Esta Semana</h3>
-                        <div class="kanban-cards" id="column-week">
-                            <!-- JS inyectará tarjetas aquí -->
-                        </div>
+                        <div class="kanban-cards" id="column-week"></div>
                     </div>
-
-                    <!-- Columna 3 -->
                     <div class="kanban-column active-column">
                         <h3 class="column-title">🔥 Hacer HOY</h3>
-                        <div class="kanban-cards" id="column-today">
-                            <!-- JS inyectará tarjetas aquí -->
-                        </div>
+                        <div class="kanban-cards" id="column-today"></div>
                     </div>
                 </div>
             </section>
 
-    <!-- MODO FOCUS (Pantalla Completa - Permanece igual) -->
+            <!-- PESTAÑA 3: HISTORIAL (Gráficos) -->
+            <section id="tab-historial" class="tab-content hidden">
+                <header class="tab-header">
+                    <h2>📊 Tu Progreso</h2>
+                    <p class="subtitle">Analiza en qué inviertes tu tiempo completado.</p>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="chart-container">
+                        <h3>Distribución de Tareas</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="statsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="history-list-container">
+                        <h3>Registro de Victorias 🏆</h3>
+                        <div id="historyList" class="history-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 4: AJUSTES (Exportar/Borrar) -->
+            <section id="tab-ajustes" class="tab-content hidden">
+                <header class="tab-header">
+                    <h2>⚙️ Ajustes del Sistema</h2>
+                    <p class="subtitle">Personaliza tu experiencia y gestiona tus datos.</p>
+                </header>
+
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h3>💾 Copia de Seguridad</h3>
+                        <p>Descarga un archivo con todas tus tareas e historial. Ideal para guardar tu progreso.</p>
+                        <button class="cta-button" onclick="App.exportData()">Descargar Datos (JSON)</button>
+                    </div>
+
+                    <div class="settings-card danger-zone">
+                        <h3>⚠️ Zona de Peligro</h3>
+                        <p>Borra absolutamente todas las tareas, la pizarra y el historial. Esta acción es irreversible.</p>
+                        <button class="cta-button danger" onclick="App.clearAllData()">Formatear Sistema</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ================= MODO FOCUS (Pantalla Completa) ================= -->
     <div id="focusOverlay" class="focus-overlay hidden">
         <div class="focus-content">
             <span class="focus-badge">MODO ZEN ACTIVADO 🧘‍♂️</span>
@@ -126,8 +170,7 @@
         </div>
     </div>
 
+    <!-- Lógica de la aplicación -->
     <script src="app.js"></script>
 </body>
 </html>
-
-
