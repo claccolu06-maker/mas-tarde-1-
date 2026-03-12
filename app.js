@@ -1,12 +1,13 @@
 /**
- * Smart-Time Hub | Team A
- * Sprint 1 & 2: Dashboard SPA + Kanban Pizarra
+ * Smart-Time Hub | Team A - Master File
+ * Sprint 1, 2 y 3: SPA, Kanban, Focus Mode & Analytics
  */
 
 const App = (() => {
     // 1. STATE (Estado de la App)
     let tasks = [];
     let focusInterval;
+    let myChart = null; // Variable para guardar el gráfico
 
     // 2. DOM ELEMENTS
     const form = document.getElementById('taskForm');
@@ -19,6 +20,7 @@ const App = (() => {
     const progressFill = document.getElementById('progressFill');
     const statsMessage = document.getElementById('statsMessage');
     const statsNumbers = document.getElementById('statsNumbers');
+    const themeBtn = document.getElementById('themeToggle');
 
     // 3. STORAGE
     const Storage = {
@@ -58,7 +60,7 @@ const App = (() => {
     };
 
     const deleteTask = (id) => {
-        if(confirm('¿Seguro que quieres borrar esto?')) {
+        if(confirm('¿Seguro que quieres borrar esto de tu sistema?')) {
             tasks = tasks.filter(t => t.id !== id);
             Storage.save();
             UI.render();
@@ -91,7 +93,7 @@ const App = (() => {
             if (timeLeft <= 0) {
                 clearInterval(focusInterval);
                 focusTimer.textContent = "00:00";
-                alert('¡Tiempo terminado!');
+                alert('¡Tiempo terminado! Gran trabajo.');
             }
             timeLeft--;
         }, 1000);
@@ -122,15 +124,15 @@ const App = (() => {
         if(btnElement) btnElement.classList.add('active');
     };
 
-    // 5. UI & RENDER
+    // 5. UI & RENDER MODULE
     const UI = {
         updateStats: () => {
             if(tasks.length === 0) return;
             const completed = tasks.filter(t => t.completed).length;
             const percentage = (completed / tasks.length) * 100;
-            progressFill.style.width = `${percentage}%`;
-            statsNumbers.textContent = `${completed}/${tasks.length} completadas`;
-            statsMessage.textContent = percentage === 100 ? '¡Todo limpio! 🏆' : '¡Sigue así! 💪';
+            if(progressFill) progressFill.style.width = `${percentage}%`;
+            if(statsNumbers) statsNumbers.textContent = `${completed}/${tasks.length} completadas`;
+            if(statsMessage) statsMessage.textContent = percentage === 100 ? '¡Todo limpio! 🏆' : '¡Sigue así! 💪';
         },
 
         render: (filteredTasks = tasks) => {
@@ -148,10 +150,13 @@ const App = (() => {
             let tareasEnBandeja = 0;
 
             filteredTasks.forEach(task => {
+                // MAGIA: Si la tarea está completada, NO la dibujamos aquí.
+                if (task.completed) return;
+
                 if (!task.status) task.status = 'bandeja';
 
                 const card = document.createElement('div');
-                card.className = `task-card ${task.completed ? 'completed' : ''}`;
+                card.className = `task-card`;
                 if (task.status !== 'bandeja') card.classList.add('kanban-card');
 
                 const selectHTML = `
@@ -173,8 +178,8 @@ const App = (() => {
                     <div class="card-actions" style="margin-top: 10px;">
                         <button class="btn-icon btn-play" onclick="App.startFocus('${task.id}')" title="Modo Zen">▶</button>
                         <button class="btn-icon btn-link" onclick="window.open('${task.url}', '_blank')">🔗</button>
-                        <button class="btn-icon btn-done" onclick="App.toggleComplete('${task.id}')">✓</button>
-                        <button class="btn-icon btn-delete" onclick="App.deleteTask('${task.id}')">🗑</button>
+                        <button class="btn-icon btn-done" onclick="App.toggleComplete('${task.id}')" title="Completar">✓</button>
+                        <button class="btn-icon btn-delete" onclick="App.deleteTask('${task.id}')" title="Borrar">🗑</button>
                     </div>
                 `;
 
@@ -199,18 +204,89 @@ const App = (() => {
                     tasksGrid.classList.remove('hidden');
                 }
             }
+            
+            // Actualizar las otras pantallas
             UI.updateStats();
+            UI.renderHistory();
+            UI.renderChart();
+        },
+
+        renderHistory: () => {
+            const historyList = document.getElementById('historyList');
+            if(!historyList) return;
+            
+            historyList.innerHTML = '';
+            const completedTasks = tasks.filter(t => t.completed);
+            
+            if(completedTasks.length === 0) {
+                historyList.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin-top: 2rem;">Aún no has completado ninguna tarea. ¡A trabajar!</p>';
+                return;
+            }
+
+            completedTasks.forEach(task => {
+                historyList.innerHTML += `
+                    <div class="history-item">
+                        <span class="history-item-title">${task.title}</span>
+                        <div style="display:flex; align-items:center; gap: 10px;">
+                            <span class="pill ${task.category}" style="font-size: 0.65rem;">${task.category}</span>
+                            <button class="btn-icon btn-link" style="padding: 2px 8px; font-size:0.8rem;" onclick="App.toggleComplete('${task.id}')" title="Deshacer">↩️</button>
+                        </div>
+                    </div>
+                `;
+            });
+        },
+
+        renderChart: () => {
+            const ctx = document.getElementById('statsChart');
+            if(!ctx) return;
+
+            const completedTasks = tasks.filter(t => t.completed);
+            
+            if(myChart) myChart.destroy();
+
+            if(completedTasks.length === 0) {
+                ctx.style.display = 'none';
+                return;
+            } else {
+                ctx.style.display = 'block';
+            }
+
+            const dataCounts = [
+                completedTasks.filter(t => t.category === 'video').length,
+                completedTasks.filter(t => t.category === 'articulo').length,
+                completedTasks.filter(t => t.category === 'curso').length,
+                completedTasks.filter(t => t.category === 'proyecto').length
+            ];
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Videos', 'Artículos', 'Cursos', 'Proyectos'],
+                    datasets: [{
+                        data: dataCounts,
+                        backgroundColor: ['#a855f7', '#3b82f6', '#10b981', '#f59e0b'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Poppins' } } } },
+                    cutout: '70%'
+                }
+            });
         }
     };
 
     const handleFilter = (e) => {
         const maxTime = parseInt(e.target.value);
         if (maxTime > 0) {
-            clearFilter.classList.remove('hidden');
-            const filtered = tasks.filter(task => task.time <= maxTime && !task.completed);
+            if(clearFilter) clearFilter.classList.remove('hidden');
+            const filtered = tasks.filter(task => task.time <= maxTime);
             UI.render(filtered);
         } else {
-            clearFilter.classList.add('hidden');
+            if(clearFilter) clearFilter.classList.add('hidden');
             UI.render(tasks);
         }
     };
@@ -218,16 +294,8 @@ const App = (() => {
     // 6. INIT
     const init = () => {
         Storage.load();
-                const themeBtn = document.getElementById('themeToggle');
-        if(themeBtn) {
-            themeBtn.addEventListener('click', () => {
-                const html = document.documentElement;
-                const isDark = html.getAttribute('data-theme') === 'dark';
-                html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-                themeBtn.textContent = isDark ? '🌙 Oscuro' : '☀️ Claro';
-            });
-        }
         
+        // Listeners
         if(form) form.addEventListener('submit', addTask);
         if(timeFilter) timeFilter.addEventListener('input', handleFilter);
         if(clearFilter) clearFilter.addEventListener('click', () => {
@@ -237,13 +305,22 @@ const App = (() => {
         });
         if(exitFocusBtn) exitFocusBtn.addEventListener('click', stopFocus);
 
+        // Tema Claro/Oscuro
+        if(themeBtn) {
+            themeBtn.addEventListener('click', () => {
+                const html = document.documentElement;
+                const isDark = html.getAttribute('data-theme') === 'dark';
+                html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+                themeBtn.textContent = isDark ? '🌙 Oscuro' : '☀️ Claro';
+            });
+        }
+
         UI.render();
     };
 
-    // EXPORTAR FUNCIONES AL HTML
+    // EXPORTAR AL HTML
     return { init, toggleComplete, deleteTask, startFocus, switchTab, moveTask };
 
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
-
