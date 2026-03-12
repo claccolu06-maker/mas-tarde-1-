@@ -128,7 +128,55 @@ const App = (() => {
             alert('Sistema formateado correctamente. ¡Un nuevo comienzo!');
         }
     };
+    // --- MAGIA PURA: CONEXIÓN CON IA GEMINI ---
+    const askGemini = async () => {
+        // ⚠️ PEGA TU CLAVE DE GOOGLE AQUÍ DENTRO DE LAS COMILLAS
+        const API_KEY = 'AQUI_VA_TU_CLAVE_SECRETA_QUE_COPIASTE'; 
 
+        const aiCard = document.getElementById('aiResponseCard');
+        const aiText = document.getElementById('aiResponseText');
+        const aiBtn = document.getElementById('askAIBtn');
+
+        // Filtramos solo las tareas que tienes planeadas para Hoy o la Semana
+        const activeTasks = tasks.filter(t => (t.status === 'today' || t.status === 'week') && !t.completed);
+        
+        if(activeTasks.length === 0) {
+            alert("Tu pizarra está vacía. Añade tareas a 'Hoy' o 'Esta Semana' para que pueda aconsejarte.");
+            return;
+        }
+
+        // Preparamos la pantalla
+        aiCard.classList.remove('hidden');
+        aiText.innerHTML = '<i>Analizando tu carga de trabajo y conectando con los servidores de Google... 🧠💭</i>';
+        aiBtn.disabled = true; // Bloqueamos el botón temporalmente
+
+        // Creamos el Prompt Oculto
+        const tasksList = activeTasks.map(t => `- ${t.title} (${t.time} min, Nivel: ${t.status})`).join('\n');
+        const prompt = `Eres un experto coach de productividad. Analiza esta lista de tareas pendientes del usuario:\n${tasksList}\n\nEscribe un consejo motivador y directo (máximo 3 párrafos) diciéndole exactamente por qué tarea debería empezar AHORA MISMO para evitar el agobio. Usa un tono amigable, profesional y usa emojis.`;
+
+        try {
+            // Llamada a la API de Google Gemini 1.5 Flash (Súper rápida)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            if (!response.ok) throw new Error('Fallo en la conexión');
+
+            const data = await response.json();
+            const advice = data.candidates[0].content.parts[0].text;
+            
+            // Reemplazamos los saltos de línea y asteriscos para que se vea bonito en HTML
+            aiText.innerHTML = advice.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            
+        } catch (error) {
+            console.error(error);
+            aiText.innerHTML = '❌ Hubo un error de conexión con la IA. Asegúrate de haber puesto bien tu API_KEY.';
+        } finally {
+            aiBtn.disabled = false; // Desbloqueamos el botón
+        }
+    };
     // --- NAVEGACIÓN SPA ---
     const switchTab = (tabName, btnElement) => {
         document.querySelectorAll('.tab-content').forEach(tab => {
@@ -344,9 +392,10 @@ const App = (() => {
     };
 
     // EXPORTAR AL HTML
-      return { init, toggleComplete, deleteTask, startFocus, switchTab, moveTask, exportData, clearAllData };
+      return { init, toggleComplete, deleteTask, startFocus, switchTab, moveTask, exportData, clearAllData,askGemini };
 
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
+
 
