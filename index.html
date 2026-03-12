@@ -96,7 +96,18 @@
                     <h2>📋 Mi Pizarra de Acción</h2>
                     <p class="subtitle">Planifica tu semana. Mueve las tareas desde la bandeja hasta aquí.</p>
                 </header>
-
+                                <!-- IA COACH SECTION -->
+                <div class="ai-coach-section">
+                    <button id="askAIBtn" class="cta-button ai-btn" onclick="App.askGemini()">
+                        ✨ Que la IA organice mi semana
+                    </button>
+                    
+                    <div id="aiResponseCard" class="ai-response-card hidden">
+                        <div class="ai-header">🤖 Tu Entrenador Personal:</div>
+                        <p id="aiResponseText">Pensando...</p>
+                    </div>
+                </div>
+                
                 <div class="kanban-board">
                     <div class="kanban-column">
                         <h3 class="column-title">⏳ Algún día</h3>
@@ -174,3 +185,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+
