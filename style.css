@@ -280,3 +280,14 @@ body { margin: 0; padding: 0; overflow: hidden; /* Evita scroll en toda la pági
 .settings-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
 .danger-zone { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.02); }
 .danger-zone h3 { color: var(--danger-red); }
+                <!-- IA COACH SECTION -->
+                <div class="ai-coach-section">
+                    <button id="askAIBtn" class="cta-button ai-btn" onclick="App.askGemini()">
+                        ✨ Que la IA organice mi semana
+                    </button>
+                    
+                    <div id="aiResponseCard" class="ai-response-card hidden">
+                        <div class="ai-header">🤖 Tu Entrenador Personal:</div>
+                        <p id="aiResponseText">Pensando...</p>
+                    </div>
+                </div>
