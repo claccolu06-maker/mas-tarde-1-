@@ -291,3 +291,25 @@ body { margin: 0; padding: 0; overflow: hidden; /* Evita scroll en toda la pági
                         <p id="aiResponseText">Pensando...</p>
                     </div>
                 </div>
+
+/* =========================================
+   SPRINT 6: LOGIN SCREEN
+   ========================================= */
+.login-screen {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: var(--bg-main); display: flex; justify-content: center; align-items: center;
+    z-index: 9999;
+}
+.login-card {
+    background: var(--bg-card); padding: 3rem; border-radius: var(--radius);
+    border: 1px solid var(--border-color); text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-width: 400px; width: 90%;
+    animation: popIn 0.5s ease;
+}
+.login-card p { color: var(--text-muted); margin-bottom: 2rem; margin-top: 0.5rem; }
+.google-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: white; color: #333; border: 1px solid #ccc;
+}
+.google-btn:hover { background: #f1f1f1; color: #000; transform: translateY(-2px); }
+.google-btn img { width: 20px; }
