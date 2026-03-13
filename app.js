@@ -269,22 +269,25 @@ const App = (() => {
         // Listener del Botón de Login
         document.getElementById('googleLoginBtn').addEventListener('click', login);
 
-        // VIGILANTE DE AUTENTICACIÓN FIREBASE
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // USUARIO LOGUEADO
-                currentUser = user;
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainDashboard').classList.remove('hidden');
-                Storage.listen(); // Descarga los datos de su cuenta
-            } else {
-                // USUARIO DESLOGUEADO
-                currentUser = null;
-                document.getElementById('loginScreen').classList.remove('hidden');
-                document.getElementById('mainDashboard').classList.add('hidden');
-            }
-        });
-    };
+       // Atrapamos las dos pantallas al inicio de tu app.js
+const pantallaLogin = document.getElementById("pantalla-login");
+const pantallaDashboard = document.getElementById("pantalla-dashboard");
+
+// Cuando Firebase nos avisa si hay usuario o no...
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // EL USUARIO ENTRÓ: Ocultamos el login, mostramos el dashboard
+    pantallaLogin.classList.add("oculto");
+    pantallaDashboard.classList.remove("oculto");
+    
+    // (Aquí ya debes tener tu código que carga las tareas...)
+
+  } else {
+    // EL USUARIO SALIÓ: Mostramos el login, ocultamos el dashboard
+    pantallaLogin.classList.remove("oculto");
+    pantallaDashboard.classList.add("oculto");
+  }
+});
 
     // Función de Gemini IA (Mantengo la que pusimos antes)
     const askGemini = async () => {
