@@ -114,3 +114,13 @@ li button:hover {
     background: #ff4b2b;
     color: white;
 }
+/* Esta clase oculta mágicamente lo que no queremos ver todavía */
+.oculto {
+    display: none !important;
+}
+
+/* Arreglamos las proporciones para que respire un poco más */
+.container {
+    max-width: 600px; /* Lo hacemos un poco más ancho para que no se apelmace */
+    padding: 50px;
+}
