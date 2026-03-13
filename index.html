@@ -15,8 +15,21 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+        <!-- ================= PANTALLA DE LOGIN ================= -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="logo">
+                <h1>Smart-Time <span>Hub</span></h1>
+            </div>
+            <p>Convierte tus enlaces guardados en progreso real.</p>
+            <button id="googleLoginBtn" class="cta-button google-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
+                Continuar con Google
+            </button>
+        </div>
+    </div>
     <!-- CONTENEDOR PRINCIPAL DEL DASHBOARD -->
-    <div class="dashboard-layout">
+   <div id="mainDashboard" class="dashboard-layout hidden">
         
         <!-- ================= MENÚ LATERAL ================= -->
         <aside class="sidebar">
@@ -31,6 +44,10 @@
             </nav>
             <div class="sidebar-footer">
                 <button id="themeToggle" class="theme-btn">☀️ Claro</button>
+                            <div class="sidebar-footer">
+                <button id="themeToggle" class="theme-btn">☀️ Claro</button>
+                <button onclick="App.logout()" class="nav-btn" style="margin-top: 10px; color: var(--danger-red);">🚪 Salir</button>
+            </div>
             </div>
         </aside>
 
@@ -185,4 +202,5 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
