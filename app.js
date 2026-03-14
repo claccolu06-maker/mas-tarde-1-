@@ -25,7 +25,36 @@ const App = (() => {
     let tasks = [];
     let focusInterval;
     let myChart = null;
+    let draggedTaskId = null; // Memoria del Modo Dios
 
+      // --- SUPERPODERES: DRAG & DROP ---
+    const dragStart = (e, id) => {
+        draggedTaskId = id;
+        e.target.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', id); // Requisito de algunos navegadores
+    };
+
+    const allowDrop = (e) => {
+        e.preventDefault(); // Apaga el bloqueo por defecto del navegador
+        const column = e.target.closest('.kanban-column');
+        if(column) column.classList.add('drag-over');
+    };
+
+    const dragLeave = (e) => {
+        const column = e.target.closest('.kanban-column');
+        if(column) column.classList.remove('drag-over');
+    };
+
+    const drop = (e, newStatus) => {
+        e.preventDefault();
+        const column = e.target.closest('.kanban-column');
+        if(column) column.classList.remove('drag-over');
+
+        if(draggedTaskId) {
+            moveTask(draggedTaskId, newStatus); // Movemos la tarea en la Nube
+            draggedTaskId = null;
+        }
+    };
     // --- SISTEMA DE TOASTS SARCÁSTICOS ---
     const showToast = (message) => {
         const container = document.getElementById('toast-container');
