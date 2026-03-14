@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-// 🚨 RECUERDA: Si cambiaste de llaves de Firebase, pégalas aquí.
+// 🚨 PON TUS LLAVES DE FIREBASE AQUÍ
 const firebaseConfig = {
   apiKey: "AIzaSyCz45FGoqkYt9BS4J1_UjkBu6gSTHp0QOU",
   authDomain: "smart-time-hub.firebaseapp.com",
@@ -10,8 +10,7 @@ const firebaseConfig = {
   projectId: "smart-time-hub",
   storageBucket: "smart-time-hub.firebasestorage.app",
   messagingSenderId: "462409089",
-  appId: "1:462409089:web:672735cbfc6d891eb92c80",
-  measurementId: "G-1V8B1VTTBH"
+  appId: "1:462409089:web:672735cbfc6d891eb92c80"
 };
 
 const appFirebase = initializeApp(firebaseConfig);
@@ -27,322 +26,189 @@ const App = (() => {
     let myChart = null;
     let draggedTaskId = null; // Memoria del Modo Dios
 
-      // --- SUPERPODERES: DRAG & DROP ---
-    const dragStart = (e, id) => {
-        draggedTaskId = id;
-        e.target.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', id); // Requisito de algunos navegadores
+    const showToast = (msg) => {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = 'toast'; t.textContent = msg;
+        c.appendChild(t); setTimeout(() => t.remove(), 4000);
     };
 
-    const allowDrop = (e) => {
-        e.preventDefault(); // Apaga el bloqueo por defecto del navegador
-        const column = e.target.closest('.kanban-column');
-        if(column) column.classList.add('drag-over');
-    };
-
-    const dragLeave = (e) => {
-        const column = e.target.closest('.kanban-column');
-        if(column) column.classList.remove('drag-over');
-    };
-
-    const drop = (e, newStatus) => {
-        e.preventDefault();
-        const column = e.target.closest('.kanban-column');
-        if(column) column.classList.remove('drag-over');
-
-        if(draggedTaskId) {
-            moveTask(draggedTaskId, newStatus); // Movemos la tarea en la Nube
-            draggedTaskId = null;
-        }
-    };
-    // --- SISTEMA DE TOASTS SARCÁSTICOS ---
-    const showToast = (message) => {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = message;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-    };
-
-    // --- CONEXIÓN CON LA NUBE FIREBASE ---
     const Storage = {
-        save: () => {
-            if(!currentUser) return;
-            set(ref(db, 'users/' + currentUser.uid + '/tasks'), tasks);
-        },
+        save: () => { if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/tasks'), tasks); },
         listen: () => {
-            if(!currentUser) return;
-            onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => {
-                const data = snapshot.val();
-                tasks = data ? data : []; 
-                UI.render(); 
+            if(currentUser) onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => {
+                tasks = snapshot.val() || []; UI.render(); 
             });
         }
     };
 
-    // --- LÓGICA DE TAREAS ---
-    const addTask = (e) => {
+    // --- MODO DIOS: DRAG & DROP ---
+    const dragStart = (e, id) => { draggedTaskId = id; e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', id); };
+    const allowDrop = (e) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.add('drag-over'); };
+    const dragLeave = (e) => { const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); };
+    const drop = (e, status) => {
         e.preventDefault();
-        const newTask = {
-            id: Date.now().toString(),
-            url: document.getElementById('urlInput').value,
-            title: document.getElementById('titleInput').value,
-            category: document.getElementById('categoryInput').value,
-            time: parseInt(document.getElementById('timeInput').value),
-            completed: false,
-            status: 'bandeja',
-            createdAt: new Date().toISOString()
-        };
-        tasks.unshift(newTask);
+        const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over');
+        if(draggedTaskId) { moveTask(draggedTaskId, status); draggedTaskId = null; }
+    };
+
+    // --- SISTEMA DE EDICIÓN MÁGICA ---
+    const editTask = (id) => {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+
+        const newTitle = prompt("Corrige el nombre de la tarea:", task.title);
+        if (newTitle === null || newTitle.trim() === "") return;
+
+        const newTime = prompt("Cambia el tiempo estimado (minutos):", task.time);
+        if (newTime === null || isNaN(newTime) || newTime <= 0) return;
+
+        task.title = newTitle.trim();
+        task.time = parseInt(newTime);
         Storage.save();
-        document.getElementById('taskForm').reset();
-        showToast("Tarea guardada. A ver si es verdad que la haces... 👀");
+        showToast("Tarea actualizada a la perfección. ✏️");
     };
 
-    const toggleComplete = (id) => {
-        const task = tasks.find(t => t.id === id);
-        if (task) { 
-            task.completed = !task.completed; 
-            Storage.save(); 
-            if(task.completed) showToast("¡Milagro! ¡Completaste algo! 🎉");
-        }
-    };
-
-    const deleteTask = (id) => {
-        if(confirm('¿Borrar tarea para siempre?')) {
-            tasks = tasks.filter(t => t.id !== id);
-            Storage.save();
-        }
-    };
-
-    const moveTask = (id, newStatus) => {
-        const task = tasks.find(t => t.id === id);
-        if (task) { 
-            task.status = newStatus; 
-            Storage.save(); 
-            if(newStatus === 'later') showToast("Ah, 'Algún día'... el cementerio de las intenciones. 🤡");
-            else if (newStatus === 'today') showToast("Más te vale cumplir con esto HOY. ⏱️");
-        }
-    };
-
-    // --- NAVEGACIÓN Y TEMA ---
-    const switchTab = (tabName, btnElement) => {
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
-        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        if(btnElement) btnElement.classList.add('active');
-        
-        if(tabName === 'historial') UI.renderChart(); // Actualiza el gráfico al entrar
-    };
-
-    const toggleTheme = () => {
-        const html = document.documentElement;
-        const btn = document.getElementById('themeToggle');
-        if (html.getAttribute('data-theme') === 'dark') {
-            html.removeAttribute('data-theme');
-            btn.textContent = '🌙 Modo Oscuro';
-        } else {
-            html.setAttribute('data-theme', 'dark');
-            btn.textContent = '☀️ Modo Claro';
-        }
-    };
-
-    // --- MODO FOCUS ---
+    // --- RELOJ INMORTAL (Focus Mode) ---
     const startFocus = (id) => {
         const task = tasks.find(t => t.id === id);
         if(!task) return;
         document.getElementById('focusTitle').textContent = task.title;
         document.getElementById('focusOverlay').classList.remove('hidden');
-        let timeLeft = task.time * 60;
         
-        focusInterval = setInterval(() => {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            document.getElementById('focusTimer').textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            if (timeLeft <= 0) { 
+        // Calculamos el Final Basado en el Reloj Global del Sistema
+        const endTime = Date.now() + (task.time * 60 * 1000);
+        
+        const updateTimer = () => {
+            const remaining = Math.round((endTime - Date.now()) / 1000);
+            
+            if (remaining <= 0) { 
                 clearInterval(focusInterval); 
                 document.getElementById('focusTimer').textContent = "00:00"; 
-                alert('¡Tiempo terminado! Buen trabajo.'); 
-                stopFocus();
+                alert('¡Tiempo terminado! El sistema te saluda.'); 
+                stopFocus(); return;
             }
-            timeLeft--;
-        }, 1000);
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            document.getElementById('focusTimer').textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        };
+
+        updateTimer(); // Ejecutar al instante
+        focusInterval = setInterval(updateTimer, 1000); // Ejecutar cada segundo
+    };
+    const stopFocus = () => { clearInterval(focusInterval); document.getElementById('focusOverlay').classList.add('hidden'); };
+
+    // --- CRUD Y DEMÁS LOGICA ---
+    const addTask = (e) => {
+        e.preventDefault();
+        tasks.unshift({
+            id: Date.now().toString(), url: document.getElementById('urlInput').value,
+            title: document.getElementById('titleInput').value, category: document.getElementById('categoryInput').value,
+            time: parseInt(document.getElementById('timeInput').value), completed: false, status: 'bandeja'
+        });
+        Storage.save(); document.getElementById('taskForm').reset(); showToast("Añadida. ¡A trabajar! 👀");
     };
 
-    const stopFocus = () => { 
-        clearInterval(focusInterval); 
-        document.getElementById('focusOverlay').classList.add('hidden'); 
+    const toggleComplete = (id) => { const t = tasks.find(x => x.id === id); if(t) { t.completed = !t.completed; Storage.save(); if(t.completed) showToast("¡Completada! 🎉"); } };
+    const deleteTask = (id) => { if(confirm('¿Destruir tarea?')) { tasks = tasks.filter(t => t.id !== id); Storage.save(); } };
+    const moveTask = (id, newStatus) => { const t = tasks.find(x => x.id === id); if(t) { t.status = newStatus; Storage.save(); } };
+    const clearAllData = () => { if(confirm("⚠️ ¿Borrar TODA la base de datos?")) { tasks = []; Storage.save(); } };
+
+    const switchTab = (tab, btn) => {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+        document.getElementById(`tab-${tab}`).classList.remove('hidden');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        if(tab === 'historial') UI.renderChart();
     };
 
-    // --- AJUSTES ---
-    const clearAllData = () => {
-        if(confirm("⚠️ ¿Estás seguro? Esto borrará TODA tu base de datos en la nube de Google.")) {
-            tasks = [];
-            Storage.save();
-            showToast("Sistema formateado. Empiezas desde cero. 🗑️");
-        }
+    const toggleTheme = () => {
+        const html = document.documentElement; const btn = document.getElementById('themeToggle');
+        if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); btn.textContent = '🌙 Modo Oscuro'; } 
+        else { html.setAttribute('data-theme', 'dark'); btn.textContent = '☀️ Modo Claro'; }
     };
 
-    // --- RENDERIZADO VISUAL ---
     const UI = {
         updateStats: () => {
             if(tasks.length === 0) return;
-            const completed = tasks.filter(t => t.completed).length;
-            const percentage = (completed / tasks.length) * 100;
-            document.getElementById('progressFill').style.width = `${percentage}%`;
-            document.getElementById('statsNumbers').textContent = `${completed}/${tasks.length} completadas`;
-            document.getElementById('statsMessage').textContent = percentage === 100 ? '¡Todo limpio! 🏆' : '¡Sigue así! 💪';
+            const c = tasks.filter(t => t.completed).length;
+            document.getElementById('progressFill').style.width = `${(c / tasks.length) * 100}%`;
+            document.getElementById('statsNumbers').textContent = `${c}/${tasks.length} listas`;
         },
-        render: (filteredTasks = tasks) => {
-            const grids = {
-                bandeja: document.getElementById('tasksGrid'),
-                later: document.getElementById('column-later'),
-                week: document.getElementById('column-week'),
-                today: document.getElementById('column-today'),
-                history: document.getElementById('historyList')
-            };
+        render: () => {
+            const g = { bandeja: document.getElementById('tasksGrid'), later: document.getElementById('column-later'), week: document.getElementById('column-week'), today: document.getElementById('column-today'), history: document.getElementById('historyList') };
+            Object.values(g).forEach(el => { if(el) el.innerHTML = ''; });
 
-            Object.values(grids).forEach(el => { if(el) el.innerHTML = ''; });
-            let enBandeja = 0;
-
-            filteredTasks.forEach(task => {
+            tasks.forEach(task => {
                 if (task.completed) {
-                    grids.history.innerHTML += `
-                        <div class="kanban-card" style="border-left-color: var(--cta-green); padding: 10px;">
-                            <span style="text-decoration: line-through; color: var(--text-muted);">${task.title}</span>
-                            <button onclick="App.toggleComplete('${task.id}')" style="float: right; background: none; border: none; cursor:pointer;" title="Deshacer">↩️</button>
-                        </div>`;
+                    g.history.innerHTML += `<div class="kanban-card" style="border-left-color: var(--cta-green);"><span style="text-decoration:line-through; color:gray">${task.title}</span><button onclick="App.toggleComplete('${task.id}')" style="float:right; background:none; border:none; cursor:pointer;">↩️</button></div>`;
                     return;
                 }
-
                 if (!task.status) task.status = 'bandeja';
 
-                const card = document.createElement('div');
-                card.className = `kanban-card`;
-
-                const selectHTML = `<select style="margin: 10px 0; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 5px; border-radius: 5px;" onchange="App.moveTask('${task.id}', this.value)">
-                        <option value="bandeja" ${task.status === 'bandeja' ? 'selected' : ''}>📥 Bandeja</option>
-                        <option value="later" ${task.status === 'later' ? 'selected' : ''}>⏳ Algún día</option>
-                        <option value="week" ${task.status === 'week' ? 'selected' : ''}>📅 Esta Semana</option>
-                        <option value="today" ${task.status === 'today' ? 'selected' : ''}>🔥 Hacer HOY</option>
-                    </select>`;
+                const card = document.createElement('div'); card.className = `kanban-card`;
+                card.draggable = true; card.ondragstart = (e) => App.dragStart(e, task.id); card.ondragend = (e) => e.target.classList.remove('dragging');
 
                 card.innerHTML = `
-                    <div style="font-size:0.8rem; margin-bottom: 5px; font-weight: bold;" class="pill ${task.category}">${task.category.toUpperCase()} | ⏱ ${task.time}m</div>
-                    <h4 style="margin: 0; font-size: 1rem;">${task.title}</h4>${selectHTML}
+                    <div style="font-size:0.8rem; margin-bottom: 5px;" class="pill ${task.category}">${task.category.toUpperCase()} | ⏱ ${task.time}m</div>
+                    <h4 style="margin: 0; font-size: 1rem;">${task.title}</h4>
+                    <select style="margin:10px 0; width:100%; padding:5px; border-radius:5px; background:var(--input-bg); color:var(--text-main)" onchange="App.moveTask('${task.id}', this.value)">
+                        <option value="bandeja" ${task.status === 'bandeja'?'selected':''}>📥 Bandeja</option><option value="later" ${task.status === 'later'?'selected':''}>⏳ Algún día</option><option value="week" ${task.status === 'week'?'selected':''}>📅 Esta Semana</option><option value="today" ${task.status === 'today'?'selected':''}>🔥 Hacer HOY</option>
+                    </select>
                     <div style="display:flex; justify-content:space-between; margin-top: 10px;">
-                        <button class="btn-icon" style="color:var(--accent-blue);" onclick="App.startFocus('${task.id}')" title="Modo Focus">▶️</button>
-                        ${task.url ? `<a href="${task.url}" target="_blank" class="btn-icon" style="text-decoration: none;" title="Abrir Enlace">🔗</a>` : ''}
-                        <button class="btn-icon" style="color:var(--cta-green);" onclick="App.toggleComplete('${task.id}')" title="Completar">✔️</button>
-                        <button class="btn-icon" style="color:var(--danger-red);" onclick="App.deleteTask('${task.id}')" title="Borrar">🗑</button>
+                        <button class="btn-icon" style="color:var(--accent-blue);" onclick="App.startFocus('${task.id}')">▶️</button>
+                        <button class="btn-icon" style="color:#f59e0b;" onclick="App.editTask('${task.id}')">✏️</button>
+                        <button class="btn-icon" style="color:var(--cta-green);" onclick="App.toggleComplete('${task.id}')">✔️</button>
+                        <button class="btn-icon" style="color:var(--danger-red);" onclick="App.deleteTask('${task.id}')">🗑</button>
                     </div>`;
 
-                if (task.status === 'bandeja') { grids.bandeja.appendChild(card); enBandeja++; }
-                else if (task.status === 'later') grids.later.appendChild(card);
-                else if (task.status === 'week') grids.week.appendChild(card);
-                else if (task.status === 'today') grids.today.appendChild(card);
+                if (task.status === 'bandeja') g.bandeja.appendChild(card);
+                else if (task.status === 'later') g.later.appendChild(card);
+                else if (task.status === 'week') g.week.appendChild(card);
+                else if (task.status === 'today') g.today.appendChild(card);
             });
-
-            document.getElementById('emptyState').classList.toggle('hidden', enBandeja > 0);
             UI.updateStats();
         },
         renderChart: () => {
-            const ctx = document.getElementById('statsChart');
-            if(!ctx) return;
-            const comp = tasks.filter(t => t.completed);
-            if(myChart) myChart.destroy();
-            if(comp.length === 0) return;
-
-            const counts = ['video', 'articulo', 'curso', 'proyecto'].map(cat => comp.filter(t => t.category === cat).length);
-            const fontColor = document.documentElement.getAttribute('data-theme') === 'dark' ? 'white' : 'black';
-
-            myChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: ['Videos', 'Artículos', 'Cursos', 'Proyectos'], datasets: [{ data: counts, backgroundColor: ['#a855f7', '#38bdf8', '#10b981', '#f59e0b'], borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: fontColor } } } }
-            });
+            const ctx = document.getElementById('statsChart'); if(!ctx) return;
+            const comp = tasks.filter(t => t.completed); if(myChart) myChart.destroy();
+            const counts = ['video', 'articulo', 'curso', 'proyecto'].map(c => comp.filter(t => t.category === c).length);
+            myChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['Videos', 'Artículos', 'Cursos', 'Proyectos'], datasets: [{ data: counts, backgroundColor: ['#a855f7', '#38bdf8', '#10b981', '#f59e0b'], borderWidth: 0 }] }});
         }
     };
 
-    // --- FILTRO MÁGICO DE TIEMPO ---
-    const handleFilter = (e) => {
-        const maxTime = parseInt(e.target.value);
-        const clearBtn = document.getElementById('clearFilter');
-        if (maxTime > 0) {
-            clearBtn.classList.remove('hidden');
-            UI.render(tasks.filter(task => task.time <= maxTime));
-        } else {
-            clearBtn.classList.add('hidden');
-            UI.render(tasks);
-        }
-    };
-
-      // --- GEMINI IA (MODO SIMULADOR HOLOGRÁFICO) ---
+    // Simulador IA
     const askGemini = async () => {
-        const aiCard = document.getElementById('aiResponseCard');
-        const aiText = document.getElementById('aiResponseText');
+        const aiCard = document.getElementById('aiResponseCard'); const aiText = document.getElementById('aiResponseText');
         const active = tasks.filter(t => (t.status === 'today' || t.status === 'week') && !t.completed);
-        
-        if(active.length === 0) { showToast("Tu pizarra está vacía. No me hagas perder el tiempo. 🤖"); return; }
-        
-        // Desplegamos la tarjeta y simulamos que la IA está pensando
-        aiCard.classList.remove('hidden');
-        aiText.innerHTML = '<i>Analizando tu nivel de procrastinación... 🧠💭</i>';
-
-        // Base de datos de respuestas sarcásticas
-        const consejos = [
-            "Tu yo del futuro está llorando ahora mismo. Deja de mirar esta pantalla y empieza con la primera tarea de <b style='color:var(--danger-red)'>Hacer HOY</b>. 🔥",
-            "Veo que tienes <b>" + active.length + "</b> tareas pendientes. ¿Qué tal si enciendes el <b style='color:var(--accent-blue)'>Modo Focus</b> y dejas de engañar a tu cerebro? ⏱️",
-            "Si sigues posponiendo esto, terminarás trabajando el fin de semana. ¡Mueve esos dedos! 🤡",
-            "Mis algoritmos cuánticos indican que deberías dejar el celular y terminar esa tarea que llevas evitando toda la semana. 🧘‍♂️",
-            "Interesante lista de tareas... Sería una lástima que te distrajeras viendo videos de gatitos. ¡A TRABAJAR! 🐈"
-        ];
-
-        // Simulamos un retraso de internet de 2.5 segundos para darle realismo
-        setTimeout(() => {
-            const random = Math.floor(Math.random() * consejos.length);
-            aiText.innerHTML = consejos[random];
-            showToast("Mensaje de la IA recibido. 📡");
-        }, 2500); 
+        if(active.length === 0) { showToast("Tu pizarra está vacía. 🤖"); return; }
+        aiCard.classList.remove('hidden'); aiText.innerHTML = '<i>Analizando tu flojera... 🧠</i>';
+        setTimeout(() => { aiText.innerHTML = "Tu yo del futuro está llorando. Deja el celular y ataca la primera tarea de Hacer HOY. 🔥"; }, 2000); 
     };
-    // --- AUTH ---
-    const login = () => signInWithPopup(auth, provider).catch(console.error);
-    const logout = () => signOut(auth).then(() => {
-        tasks = []; 
-        document.getElementById('mainDashboard').classList.add('hidden');
-        document.getElementById('loginScreen').classList.remove('hidden');
-    });
 
-    // --- INICIALIZADOR ---
+    const login = () => signInWithPopup(auth, provider).catch(console.error);
+    const logout = () => signOut(auth).then(() => { tasks = []; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
+
     const init = () => {
         document.getElementById('taskForm').addEventListener('submit', addTask);
         document.getElementById('exitFocus').addEventListener('click', stopFocus);
         document.getElementById('googleLoginBtn').addEventListener('click', login);
         
-        const timeFilter = document.getElementById('timeFilter');
-        const clearFilter = document.getElementById('clearFilter');
-        timeFilter.addEventListener('input', handleFilter);
-        clearFilter.addEventListener('click', () => { timeFilter.value = ''; clearFilter.classList.add('hidden'); UI.render(tasks); });
-
-        // Vigía de Google
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainDashboard').classList.remove('hidden');
-                Storage.listen(); // Descarga los datos mágicamente
-            } else {
-                currentUser = null;
-                document.getElementById('loginScreen').classList.remove('hidden');
-                document.getElementById('mainDashboard').classList.add('hidden');
-            }
+            if (user) { currentUser = user; document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('mainDashboard').classList.remove('hidden'); Storage.listen(); } 
+            else { currentUser = null; document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('mainDashboard').classList.add('hidden'); }
         });
     };
 
-       return { init, toggleComplete, deleteTask, startFocus, moveTask, switchTab, toggleTheme, clearAllData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop };
+    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, toggleTheme, clearAllData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop };
 })();
 
-// HACERLO GLOBAL PARA EL HTML
 window.App = App;
 document.addEventListener('DOMContentLoaded', App.init);
+
+// 🚀 REGISTRO DEL SERVICE WORKER (PARA LA APP INSTALABLE)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => console.log('App lista para instalarse.')).catch(err => console.error('Error PWA:', err));
+    });
+}
