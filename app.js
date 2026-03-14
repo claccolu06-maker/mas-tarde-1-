@@ -109,7 +109,26 @@ const App = (() => {
         Storage.save(); document.getElementById('taskForm').reset(); showToast("Añadida. ¡A trabajar! 👀");
     };
 
-    const toggleComplete = (id) => { const t = tasks.find(x => x.id === id); if(t) { t.completed = !t.completed; Storage.save(); if(t.completed) showToast("¡Completada! 🎉"); } };
+       const toggleComplete = (id) => { 
+        const t = tasks.find(x => x.id === id); 
+        if(t) { 
+            t.completed = !t.completed; 
+            Storage.save(); 
+            
+            // Si la tarea se marcó como completada... ¡BOOM!
+            if(t.completed) { 
+                showToast("¡Completada! 🎉"); 
+                
+                // Disparo de Confeti
+                confetti({
+                    particleCount: 150, // Cantidad de papelitos
+                    spread: 80,         // Ángulo de apertura
+                    origin: { y: 0.6 }, // Desde dónde sale (un poco más abajo del centro)
+                    colors: ['#38bdf8', '#a855f7', '#10b981', '#f59e0b'] // Azul, Morado, Verde, Naranja
+                });
+            } 
+        } 
+    };
     const deleteTask = (id) => { if(confirm('¿Destruir tarea?')) { tasks = tasks.filter(t => t.id !== id); Storage.save(); } };
     const moveTask = (id, newStatus) => { const t = tasks.find(x => x.id === id); if(t) { t.status = newStatus; Storage.save(); } };
     const clearAllData = () => { if(confirm("⚠️ ¿Borrar TODA la base de datos?")) { tasks = []; Storage.save(); } };
