@@ -141,3 +141,30 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 10
     .main-content { padding: 1rem; overflow-y: visible; }
     .kanban-board, .stats-grid { flex-direction: column; grid-template-columns: 1fr; }
 }
+/* =========================================
+   EFECTOS MODO DIOS (DRAG & DROP)
+   ========================================= */
+
+/* Cuando estás agarrando una tarjeta */
+.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    border: 2px dashed var(--accent-blue) !important;
+    cursor: grabbing !important;
+}
+
+/* Cuando la tarjeta la puedes agarrar */
+.kanban-card[draggable="true"] {
+    cursor: grab;
+}
+.kanban-card[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* Cuando pasas la tarjeta por encima de una columna */
+.drag-over {
+    background: rgba(56, 189, 248, 0.1) !important;
+    border: 2px dashed var(--accent-blue) !important;
+    transform: scale(1.02);
+    transition: all 0.2s ease;
+}
