@@ -168,3 +168,8 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 10
     transform: scale(1.02);
     transition: all 0.2s ease;
 }
+/* EFECTOS MODO DIOS (DRAG & DROP) */
+.dragging { opacity: 0.5; transform: scale(0.95); border: 2px dashed var(--accent-blue) !important; cursor: grabbing !important; }
+.kanban-card[draggable="true"] { cursor: grab; }
+.kanban-card[draggable="true"]:active { cursor: grabbing; }
+.drag-over { background: rgba(56, 189, 248, 0.1) !important; border: 2px dashed var(--accent-blue) !important; transform: scale(1.02); transition: all 0.2s ease; }
