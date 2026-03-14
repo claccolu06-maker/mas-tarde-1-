@@ -115,16 +115,21 @@
                     </div>
                 </div>
                 
-                <div class="kanban-board">
-                    <div class="kanban-column glass-panel">
+                                <div class="kanban-board">
+                    <!-- Columna 1: Algún Día -->
+                    <div class="kanban-column glass-panel" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'later')">
                         <h3 class="column-title" style="color: var(--cat-video);">⏳ Algún día</h3>
                         <div class="kanban-cards" id="column-later"></div>
                     </div>
-                    <div class="kanban-column glass-panel">
+                    
+                    <!-- Columna 2: Esta Semana -->
+                    <div class="kanban-column glass-panel" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'week')">
                         <h3 class="column-title" style="color: var(--cat-proyecto);">📅 Esta Semana</h3>
                         <div class="kanban-cards" id="column-week"></div>
                     </div>
-                    <div class="kanban-column glass-panel active-column">
+                    
+                    <!-- Columna 3: Hacer Hoy -->
+                    <div class="kanban-column glass-panel active-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'today')">
                         <h3 class="column-title" style="color: var(--danger-red);">🔥 Hacer HOY</h3>
                         <div class="kanban-cards" id="column-today"></div>
                     </div>
