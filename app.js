@@ -249,29 +249,34 @@ const App = (() => {
         }
     };
 
-    // --- GEMINI IA ---
+      // --- GEMINI IA (MODO SIMULADOR HOLOGRÁFICO) ---
     const askGemini = async () => {
-        const API_KEY = 'AQUI_VA_TU_CLAVE_DE_GEMINI'; // 🚨 RECUERDA PONER TU CLAVE
         const aiCard = document.getElementById('aiResponseCard');
         const aiText = document.getElementById('aiResponseText');
         const active = tasks.filter(t => (t.status === 'today' || t.status === 'week') && !t.completed);
         
-        if(active.length === 0) { showToast("Tu pizarra está vacía. No molestes a la IA. 🤖"); return; }
+        if(active.length === 0) { showToast("Tu pizarra está vacía. No me hagas perder el tiempo. 🤖"); return; }
+        
+        // Desplegamos la tarjeta y simulamos que la IA está pensando
         aiCard.classList.remove('hidden');
-        aiText.innerHTML = '<i>Pensando... 🧠💭</i>';
+        aiText.innerHTML = '<i>Analizando tu nivel de procrastinación... 🧠💭</i>';
 
-        const tasksList = active.map(t => `- ${t.title} (${t.time} min)`).join('\n');
-        const prompt = `Eres un coach de productividad sarcástico. Analiza esta lista de tareas:\n${tasksList}\n\nDile por qué tarea empezar hoy y regáñalo sutilmente por procrastinar.`;
+        // Base de datos de respuestas sarcásticas
+        const consejos = [
+            "Tu yo del futuro está llorando ahora mismo. Deja de mirar esta pantalla y empieza con la primera tarea de <b style='color:var(--danger-red)'>Hacer HOY</b>. 🔥",
+            "Veo que tienes <b>" + active.length + "</b> tareas pendientes. ¿Qué tal si enciendes el <b style='color:var(--accent-blue)'>Modo Focus</b> y dejas de engañar a tu cerebro? ⏱️",
+            "Si sigues posponiendo esto, terminarás trabajando el fin de semana. ¡Mueve esos dedos! 🤡",
+            "Mis algoritmos cuánticos indican que deberías dejar el celular y terminar esa tarea que llevas evitando toda la semana. 🧘‍♂️",
+            "Interesante lista de tareas... Sería una lástima que te distrajeras viendo videos de gatitos. ¡A TRABAJAR! 🐈"
+        ];
 
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-            const data = await response.json();
-            aiText.innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--accent-blue)">$1</b>');
-        } catch (error) { aiText.innerHTML = '❌ La IA también está procrastinando (Fallo de conexión).'; } 
+        // Simulamos un retraso de internet de 2.5 segundos para darle realismo
+        setTimeout(() => {
+            const random = Math.floor(Math.random() * consejos.length);
+            aiText.innerHTML = consejos[random];
+            showToast("Mensaje de la IA recibido. 📡");
+        }, 2500); 
     };
-
     // --- AUTH ---
     const login = () => signInWithPopup(auth, provider).catch(console.error);
     const logout = () => signOut(auth).then(() => {
