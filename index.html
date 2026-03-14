@@ -1,59 +1,188 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProcrastinIA - Tu Gestor de Tareas</title>
-    <!-- Conectamos el diseño -->
+    <title>Smart-Time Hub | Team A</title>
+    <!-- Tipografía -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Librería para Gráficos (Chart.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Estilos -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- EL CRISTAL OSCURO (Contenedor Principal) -->
-    <div class="container" id="app">
-
-        <!-- ========================================== -->
-        <!-- HABITACIÓN 1: LA SALA DE ESPERA (Login)    -->
-        <!-- ========================================== -->
-        <div id="pantalla-login">
-            <h1>ProcrastinIA</h1>
-            <p style="margin-bottom: 30px; color: #ccc;">El noble arte de dejar las cosas para mañana... <br> ¡Enfréntalo hoy!</p>
-            
-            <!-- Botón gigante y llamativo para entrar -->
-            <button id="login-btn">Entrar con Google 🚀</button>
-        </div>
-
-
-        <!-- ========================================== -->
-        <!-- HABITACIÓN 2: EL CENTRO DE MANDO (Oculto)  -->
-        <!-- ========================================== -->
-        <!-- OJO: Tiene la clase "oculto" para que no se vea al inicio -->
-        <div id="pantalla-dashboard" class="oculto">
-            
-            <h2 style="color: #00f2fe; margin-top: 0;">Tus Tareas</h2>
-            
-            <!-- Caja para escribir y botón de añadir -->
-            <div style="margin-bottom: 20px;">
-                <input type="text" id="nueva-tarea" placeholder="¿Qué vas a posponer hoy?">
-                <button id="agregar-btn">Añadir</button>
+    <!-- ================= PANTALLA DE LOGIN ================= -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card glass-panel">
+            <div class="logo">
+                <h1 class="neon-text">Smart-Time <span>Hub</span></h1>
             </div>
-
-            <!-- La lista donde aparecerán las tareas -->
-            <ul id="lista-tareas">
-                <!-- Javascript meterá los <li> aquí adentro -->
-            </ul>
-
-            <br>
-            <!-- Botón de salir (más pequeño y discreto para que no estorbe) -->
-            <button id="logout-btn" style="background: transparent; border: 1px solid #ff4b2b; color: #ff4b2b; font-size: 12px; padding: 8px 15px; margin-top: 20px;">
-                Cerrar Sesión
+            <p>El noble arte de dejar las cosas para mañana... ¡Enfréntalo hoy!</p>
+            <button id="googleLoginBtn" class="cta-button google-btn">
+                🚀 Continuar con Google
             </button>
-            
         </div>
-
     </div>
 
-    <!-- Conectamos el cerebro (Asegúrate de que app.js sea un módulo) -->
+    <!-- ================= CONTENEDOR PRINCIPAL DEL DASHBOARD ================= -->
+    <div id="mainDashboard" class="dashboard-layout hidden">
+        
+        <!-- MENÚ LATERAL -->
+        <aside class="sidebar glass-panel">
+            <div class="logo">
+                <h2 class="neon-text" style="font-size: 1.5rem; margin-bottom: 20px;">Smart-Time</h2>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-btn active" onclick="App.switchTab('bandeja', this)">📥 Bandeja</button>
+                <button class="nav-btn" onclick="App.switchTab('pizarra', this)">📋 Mi Pizarra</button>
+                <button class="nav-btn" onclick="App.switchTab('historial', this)">📊 Historial</button>
+                <button class="nav-btn" onclick="App.switchTab('ajustes', this)">⚙️ Ajustes</button>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="themeToggle" class="theme-btn" onclick="App.toggleTheme()">☀️ Modo Claro</button>
+                <button onclick="App.logout()" class="nav-btn" style="margin-top: 10px; color: var(--danger-red);">🚪 Salir</button>
+            </div>
+        </aside>
+
+        <!-- ÁREA DE CONTENIDO -->
+        <main class="main-content">
+            
+            <!-- PESTAÑA 1: LA BANDEJA -->
+            <section id="tab-bandeja" class="tab-content active">
+                <header class="tab-header">
+                    <h2>Bandeja de Entrada</h2>
+                    <p class="subtitle">Guarda tus enlaces y organízalos por tiempo.</p>
+                </header>
+
+                <div class="stats-container glass-panel">
+                    <div class="stats-text">
+                        <span id="statsMessage">¡Vamos a por el día!</span>
+                        <span id="statsNumbers">0/0 completadas</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                </div>
+
+                <form id="taskForm" class="task-form glass-panel">
+                    <div class="input-group full-width">
+                        <input type="url" id="urlInput" placeholder="URL del contenido (opcional)">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px; width: 100%;">
+                        <input type="text" id="titleInput" placeholder="¿De qué trata?" required style="flex: 2;">
+                        <select id="categoryInput" style="flex: 1;">
+                            <option value="video">🎥 Video</option>
+                            <option value="articulo">📝 Artículo</option>
+                            <option value="curso">🎓 Curso</option>
+                            <option value="proyecto">🚀 Proyecto</option>
+                        </select>
+                        <input type="number" id="timeInput" placeholder="Minutos" min="1" required style="flex: 1;">
+                    </div>
+                    <button type="submit" class="cta-button" style="margin-top: 15px;">Guardar Tarea ✨</button>
+                </form>
+
+                <div class="magic-filter glass-panel">
+                    <label for="timeFilter">⏱️ ¿Cuánto tiempo libre tienes?</label>
+                    <div class="filter-controls">
+                        <input type="number" id="timeFilter" placeholder="Ej. 15" min="1">
+                        <button id="clearFilter" class="btn-icon btn-link hidden">✖ Limpiar</button>
+                    </div>
+                </div>
+
+                <div id="emptyState" class="empty-state hidden glass-panel">
+                    <div class="empty-icon">🌱</div>
+                    <h3>Bandeja vacía.</h3>
+                    <p>Guarda algo para después.</p>
+                </div>
+
+                <div id="tasksGrid" class="tasks-grid"></div>
+            </section>
+
+            <!-- PESTAÑA 2: PIZARRA (Kanban) -->
+            <section id="tab-pizarra" class="tab-content hidden">
+                <header class="tab-header">
+                    <h2>📋 Mi Pizarra de Acción</h2>
+                    <p class="subtitle">Planifica tu semana. Mueve las tareas desde la bandeja hasta aquí.</p>
+                </header>
+
+                <div class="ai-coach-section glass-panel" style="margin-bottom: 20px;">
+                    <button id="askAIBtn" class="cta-button ai-btn" onclick="App.askGemini()" style="width:100%; background: linear-gradient(45deg, #a855f7, #ec4899);">
+                        ✨ Que la IA organice mi semana
+                    </button>
+                    <div id="aiResponseCard" class="ai-response-card hidden">
+                        <div class="ai-header">🤖 Tu Entrenador Sarcástico:</div>
+                        <p id="aiResponseText">Pensando...</p>
+                    </div>
+                </div>
+                
+                <div class="kanban-board">
+                    <div class="kanban-column glass-panel">
+                        <h3 class="column-title" style="color: var(--cat-video);">⏳ Algún día</h3>
+                        <div class="kanban-cards" id="column-later"></div>
+                    </div>
+                    <div class="kanban-column glass-panel">
+                        <h3 class="column-title" style="color: var(--cat-proyecto);">📅 Esta Semana</h3>
+                        <div class="kanban-cards" id="column-week"></div>
+                    </div>
+                    <div class="kanban-column glass-panel active-column">
+                        <h3 class="column-title" style="color: var(--danger-red);">🔥 Hacer HOY</h3>
+                        <div class="kanban-cards" id="column-today"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 3: HISTORIAL (Gráficos) -->
+            <section id="tab-historial" class="tab-content hidden">
+                <header class="tab-header">
+                    <h2>📊 Tu Progreso</h2>
+                    <p class="subtitle">Analiza en qué inviertes tu tiempo completado.</p>
+                </header>
+                <div class="stats-grid">
+                    <div class="chart-container glass-panel">
+                        <h3>Distribución de Tareas</h3>
+                        <div style="height: 250px; margin-top: 10px;">
+                            <canvas id="statsChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="history-list-container glass-panel">
+                        <h3>Registro de Victorias 🏆</h3>
+                        <div id="historyList" class="history-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 4: AJUSTES -->
+            <section id="tab-ajustes" class="tab-content hidden">
+                <header class="tab-header">
+                    <h2>⚙️ Ajustes del Sistema</h2>
+                    <p class="subtitle">Gestiona tu base de datos en la nube.</p>
+                </header>
+                <div class="settings-grid">
+                    <div class="settings-card glass-panel danger-zone">
+                        <h3>⚠️ Zona de Peligro</h3>
+                        <p>Borra absolutamente todas las tareas, la pizarra y el historial de Firebase. Irreversible.</p>
+                        <button class="cta-button danger" onclick="App.clearAllData()">Formatear Sistema (Borrar Todo)</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ================= MODO FOCUS (Pantalla Completa) ================= -->
+    <div id="focusOverlay" class="focus-overlay hidden">
+        <div class="focus-content glass-panel" style="background: rgba(15, 23, 42, 0.9);">
+            <span class="focus-badge">MODO ZEN ACTIVADO 🧘‍♂️</span>
+            <h2 id="focusTitle" class="neon-text" style="font-size: 2.5rem; margin: 20px 0;">Tarea</h2>
+            <div id="focusTimer" class="timer-display">00:00</div>
+            <button id="exitFocus" class="cta-button danger" style="margin-top: 20px;">Abandonar Sesión</button>
+        </div>
+    </div>
+
+    <!-- Contenedor de Notificaciones Sarcásticas -->
+    <div id="toast-container"></div>
+
+    <!-- Script Principal (Módulo) -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
