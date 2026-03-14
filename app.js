@@ -1,14 +1,8 @@
-/**
- * Smart-Time Hub | Team A - CLOUD VERSION
- * Firebase Auth & Realtime Database Integrados
- */
-
-// 1. IMPORTAR LIBRERÍAS DE FIREBASE DESDE INTERNET
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-// 2. TU CONFIGURACIÓN DE FIREBASE
+// 🚨 RECUERDA: Si cambiaste de llaves de Firebase, pégalas aquí.
 const firebaseConfig = {
   apiKey: "AIzaSyCz45FGoqkYt9BS4J1_UjkBu6gSTHp0QOU",
   authDomain: "smart-time-hub.firebaseapp.com",
@@ -20,55 +14,45 @@ const firebaseConfig = {
   measurementId: "G-1V8B1VTTBH"
 };
 
-// 3. INICIALIZAR LA NUBE
 const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth(appFirebase);
 const db = getDatabase(appFirebase);
 const provider = new GoogleAuthProvider();
 
-let currentUser = null; // Guardará quién está conectado
-
-// ==========================================
-// EL MOTOR DE LA APLICACIÓN (CÓDIGO ANTERIOR REESCRITO PARA LA NUBE)
-// ==========================================
+let currentUser = null;
 
 const App = (() => {
     let tasks = [];
     let focusInterval;
     let myChart = null;
 
-    const form = document.getElementById('taskForm');
-    const timeFilter = document.getElementById('timeFilter');
-    const clearFilter = document.getElementById('clearFilter');
-    const focusOverlay = document.getElementById('focusOverlay');
-    const focusTitle = document.getElementById('focusTitle');
-    const focusTimer = document.getElementById('focusTimer');
-    const exitFocusBtn = document.getElementById('exitFocus');
-    const progressFill = document.getElementById('progressFill');
-    const statsMessage = document.getElementById('statsMessage');
-    const statsNumbers = document.getElementById('statsNumbers');
-    const themeBtn = document.getElementById('themeToggle');
+    // --- SISTEMA DE TOASTS SARCÁSTICOS ---
+    const showToast = (message) => {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    };
 
-    // --- NUEVO: SISTEMA DE GUARDADO EN FIREBASE ---
+    // --- CONEXIÓN CON LA NUBE FIREBASE ---
     const Storage = {
         save: () => {
             if(!currentUser) return;
-            // Sube el array de tareas directamente a la ruta del usuario
             set(ref(db, 'users/' + currentUser.uid + '/tasks'), tasks);
         },
         listen: () => {
             if(!currentUser) return;
-            // Escucha cambios en tiempo real desde la nube
-            const tasksRef = ref(db, 'users/' + currentUser.uid + '/tasks');
-            onValue(tasksRef, (snapshot) => {
+            onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => {
                 const data = snapshot.val();
-                tasks = data ? data : []; // Si hay datos los carga, si no, array vacío
-                UI.render(); // Redibuja la pantalla mágicamente
+                tasks = data ? data : []; 
+                UI.render(); 
             });
         }
     };
 
-    // LÓGICA DE TAREAS (CRUD)
+    // --- LÓGICA DE TAREAS ---
     const addTask = (e) => {
         e.preventDefault();
         const newTask = {
@@ -83,12 +67,17 @@ const App = (() => {
         };
         tasks.unshift(newTask);
         Storage.save();
-        form.reset();
+        document.getElementById('taskForm').reset();
+        showToast("Tarea guardada. A ver si es verdad que la haces... 👀");
     };
 
     const toggleComplete = (id) => {
         const task = tasks.find(t => t.id === id);
-        if (task) { task.completed = !task.completed; Storage.save(); }
+        if (task) { 
+            task.completed = !task.completed; 
+            Storage.save(); 
+            if(task.completed) showToast("¡Milagro! ¡Completaste algo! 🎉");
+        }
     };
 
     const deleteTask = (id) => {
@@ -100,227 +89,226 @@ const App = (() => {
 
     const moveTask = (id, newStatus) => {
         const task = tasks.find(t => t.id === id);
-        if (task) { task.status = newStatus; Storage.save(); }
+        if (task) { 
+            task.status = newStatus; 
+            Storage.save(); 
+            if(newStatus === 'later') showToast("Ah, 'Algún día'... el cementerio de las intenciones. 🤡");
+            else if (newStatus === 'today') showToast("Más te vale cumplir con esto HOY. ⏱️");
+        }
     };
 
-    // --- SISTEMA DE LOGIN Y NAVEGACIÓN ---
-    const login = () => {
-        signInWithPopup(auth, provider).catch((error) => {
-            console.error("Error al iniciar sesión", error);
-            alert("Hubo un error al iniciar sesión con Google.");
-        });
+    // --- NAVEGACIÓN Y TEMA ---
+    const switchTab = (tabName, btnElement) => {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        if(btnElement) btnElement.classList.add('active');
+        
+        if(tabName === 'historial') UI.renderChart(); // Actualiza el gráfico al entrar
     };
 
-    const logout = () => {
-        signOut(auth).then(() => {
-            tasks = []; // Vaciamos la memoria
-            document.getElementById('mainDashboard').classList.add('hidden');
-            document.getElementById('loginScreen').classList.remove('hidden');
-        });
+    const toggleTheme = () => {
+        const html = document.documentElement;
+        const btn = document.getElementById('themeToggle');
+        if (html.getAttribute('data-theme') === 'dark') {
+            html.removeAttribute('data-theme');
+            btn.textContent = '🌙 Modo Oscuro';
+        } else {
+            html.setAttribute('data-theme', 'dark');
+            btn.textContent = '☀️ Modo Claro';
+        }
     };
 
+    // --- MODO FOCUS ---
     const startFocus = (id) => {
         const task = tasks.find(t => t.id === id);
         if(!task) return;
-        focusTitle.textContent = task.title;
-        focusOverlay.classList.remove('hidden');
+        document.getElementById('focusTitle').textContent = task.title;
+        document.getElementById('focusOverlay').classList.remove('hidden');
         let timeLeft = task.time * 60;
+        
         focusInterval = setInterval(() => {
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
-            focusTimer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            if (timeLeft <= 0) { clearInterval(focusInterval); focusTimer.textContent = "00:00"; alert('¡Tiempo terminado!'); }
+            document.getElementById('focusTimer').textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            if (timeLeft <= 0) { 
+                clearInterval(focusInterval); 
+                document.getElementById('focusTimer').textContent = "00:00"; 
+                alert('¡Tiempo terminado! Buen trabajo.'); 
+                stopFocus();
+            }
             timeLeft--;
         }, 1000);
     };
 
-    const stopFocus = () => { clearInterval(focusInterval); focusOverlay.classList.add('hidden'); };
-
-    const switchTab = (tabName, btnElement) => {
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.add('hidden'); tab.classList.remove('active');
-        });
-        const selectedTab = document.getElementById(`tab-${tabName}`);
-        if(selectedTab) { selectedTab.classList.remove('hidden'); selectedTab.classList.add('active'); }
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        if(btnElement) btnElement.classList.add('active');
+    const stopFocus = () => { 
+        clearInterval(focusInterval); 
+        document.getElementById('focusOverlay').classList.add('hidden'); 
     };
 
-    // UI RENDER (Acortado para ahorrar espacio, incluye tu código previo)
+    // --- AJUSTES ---
+    const clearAllData = () => {
+        if(confirm("⚠️ ¿Estás seguro? Esto borrará TODA tu base de datos en la nube de Google.")) {
+            tasks = [];
+            Storage.save();
+            showToast("Sistema formateado. Empiezas desde cero. 🗑️");
+        }
+    };
+
+    // --- RENDERIZADO VISUAL ---
     const UI = {
         updateStats: () => {
             if(tasks.length === 0) return;
             const completed = tasks.filter(t => t.completed).length;
             const percentage = (completed / tasks.length) * 100;
-            if(progressFill) progressFill.style.width = `${percentage}%`;
-            if(statsNumbers) statsNumbers.textContent = `${completed}/${tasks.length} completadas`;
-            if(statsMessage) statsMessage.textContent = percentage === 100 ? '¡Todo limpio! 🏆' : '¡Sigue así! 💪';
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+            document.getElementById('statsNumbers').textContent = `${completed}/${tasks.length} completadas`;
+            document.getElementById('statsMessage').textContent = percentage === 100 ? '¡Todo limpio! 🏆' : '¡Sigue así! 💪';
         },
         render: (filteredTasks = tasks) => {
-            const tasksGrid = document.getElementById('tasksGrid');
-            const emptyState = document.getElementById('emptyState');
-            const colLater = document.getElementById('column-later');
-            const colWeek = document.getElementById('column-week');
-            const colToday = document.getElementById('column-today');
+            const grids = {
+                bandeja: document.getElementById('tasksGrid'),
+                later: document.getElementById('column-later'),
+                week: document.getElementById('column-week'),
+                today: document.getElementById('column-today'),
+                history: document.getElementById('historyList')
+            };
 
-            if(tasksGrid) tasksGrid.innerHTML = '';
-            if(colLater) colLater.innerHTML = '';
-            if(colWeek) colWeek.innerHTML = '';
-            if(colToday) colToday.innerHTML = '';
+            Object.values(grids).forEach(el => { if(el) el.innerHTML = ''; });
+            let enBandeja = 0;
 
-            let tareasEnBandeja = 0;
             filteredTasks.forEach(task => {
-                if (task.completed) return;
+                if (task.completed) {
+                    grids.history.innerHTML += `
+                        <div class="kanban-card" style="border-left-color: var(--cta-green); padding: 10px;">
+                            <span style="text-decoration: line-through; color: var(--text-muted);">${task.title}</span>
+                            <button onclick="App.toggleComplete('${task.id}')" style="float: right; background: none; border: none; cursor:pointer;" title="Deshacer">↩️</button>
+                        </div>`;
+                    return;
+                }
+
                 if (!task.status) task.status = 'bandeja';
 
                 const card = document.createElement('div');
-                card.className = `task-card`;
-                if (task.status !== 'bandeja') card.classList.add('kanban-card');
+                card.className = `kanban-card`;
 
-                const selectHTML = `<select class="kanban-select" onchange="App.moveTask('${task.id}', this.value)">
+                const selectHTML = `<select style="margin: 10px 0; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 5px; border-radius: 5px;" onchange="App.moveTask('${task.id}', this.value)">
                         <option value="bandeja" ${task.status === 'bandeja' ? 'selected' : ''}>📥 Bandeja</option>
                         <option value="later" ${task.status === 'later' ? 'selected' : ''}>⏳ Algún día</option>
                         <option value="week" ${task.status === 'week' ? 'selected' : ''}>📅 Esta Semana</option>
                         <option value="today" ${task.status === 'today' ? 'selected' : ''}>🔥 Hacer HOY</option>
                     </select>`;
 
-                card.innerHTML = `<div class="card-header"><span class="pill ${task.category}">${task.category}</span><span class="time-badge">⏱ ${task.time} min</span></div>
-                    <h4>${task.title}</h4>${selectHTML}
-                    <div class="card-actions" style="margin-top: 10px;">
-                        <button class="btn-icon btn-play" onclick="App.startFocus('${task.id}')">▶</button>
-                        <button class="btn-icon btn-link" onclick="window.open('${task.url}', '_blank')">🔗</button>
-                        <button class="btn-icon btn-done" onclick="App.toggleComplete('${task.id}')">✓</button>
-                        <button class="btn-icon btn-delete" onclick="App.deleteTask('${task.id}')">🗑</button>
+                card.innerHTML = `
+                    <div style="font-size:0.8rem; margin-bottom: 5px; font-weight: bold;" class="pill ${task.category}">${task.category.toUpperCase()} | ⏱ ${task.time}m</div>
+                    <h4 style="margin: 0; font-size: 1rem;">${task.title}</h4>${selectHTML}
+                    <div style="display:flex; justify-content:space-between; margin-top: 10px;">
+                        <button class="btn-icon" style="color:var(--accent-blue);" onclick="App.startFocus('${task.id}')" title="Modo Focus">▶️</button>
+                        ${task.url ? `<a href="${task.url}" target="_blank" class="btn-icon" style="text-decoration: none;" title="Abrir Enlace">🔗</a>` : ''}
+                        <button class="btn-icon" style="color:var(--cta-green);" onclick="App.toggleComplete('${task.id}')" title="Completar">✔️</button>
+                        <button class="btn-icon" style="color:var(--danger-red);" onclick="App.deleteTask('${task.id}')" title="Borrar">🗑</button>
                     </div>`;
 
-                if (task.status === 'bandeja' && tasksGrid) { tasksGrid.appendChild(card); tareasEnBandeja++; }
-                else if (task.status === 'later' && colLater) colLater.appendChild(card);
-                else if (task.status === 'week' && colWeek) colWeek.appendChild(card);
-                else if (task.status === 'today' && colToday) colToday.appendChild(card);
+                if (task.status === 'bandeja') { grids.bandeja.appendChild(card); enBandeja++; }
+                else if (task.status === 'later') grids.later.appendChild(card);
+                else if (task.status === 'week') grids.week.appendChild(card);
+                else if (task.status === 'today') grids.today.appendChild(card);
             });
 
-            if(emptyState && tasksGrid) {
-                if (tareasEnBandeja === 0) { emptyState.classList.remove('hidden'); tasksGrid.classList.add('hidden'); }
-                else { emptyState.classList.add('hidden'); tasksGrid.classList.remove('hidden'); }
-            }
+            document.getElementById('emptyState').classList.toggle('hidden', enBandeja > 0);
             UI.updateStats();
-            UI.renderHistory();
-            UI.renderChart();
-        },
-        renderHistory: () => {
-            const historyList = document.getElementById('historyList');
-            if(!historyList) return;
-            historyList.innerHTML = '';
-            const completedTasks = tasks.filter(t => t.completed);
-            if(completedTasks.length === 0) { historyList.innerHTML = '<p style="text-align: center;">Aún no hay tareas completadas.</p>'; return; }
-            completedTasks.forEach(task => {
-                historyList.innerHTML += `<div class="history-item"><span class="history-item-title">${task.title}</span><div style="display:flex; align-items:center; gap: 10px;"><span class="pill ${task.category}" style="font-size: 0.65rem;">${task.category}</span><button class="btn-icon btn-link" style="padding: 2px 8px; font-size:0.8rem;" onclick="App.toggleComplete('${task.id}')">↩️</button></div></div>`;
-            });
         },
         renderChart: () => {
             const ctx = document.getElementById('statsChart');
             if(!ctx) return;
-            const completedTasks = tasks.filter(t => t.completed);
+            const comp = tasks.filter(t => t.completed);
             if(myChart) myChart.destroy();
-            if(completedTasks.length === 0) { ctx.style.display = 'none'; return; }
-            else { ctx.style.display = 'block'; }
+            if(comp.length === 0) return;
 
-            const dataCounts = [
-                completedTasks.filter(t => t.category === 'video').length,
-                completedTasks.filter(t => t.category === 'articulo').length,
-                completedTasks.filter(t => t.category === 'curso').length,
-                completedTasks.filter(t => t.category === 'proyecto').length
-            ];
+            const counts = ['video', 'articulo', 'curso', 'proyecto'].map(cat => comp.filter(t => t.category === cat).length);
+            const fontColor = document.documentElement.getAttribute('data-theme') === 'dark' ? 'white' : 'black';
 
             myChart = new Chart(ctx, {
                 type: 'doughnut',
-                data: { labels: ['Videos', 'Artículos', 'Cursos', 'Proyectos'], datasets: [{ data: dataCounts, backgroundColor: ['#a855f7', '#3b82f6', '#10b981', '#f59e0b'], borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }, cutout: '70%' }
+                data: { labels: ['Videos', 'Artículos', 'Cursos', 'Proyectos'], datasets: [{ data: counts, backgroundColor: ['#a855f7', '#38bdf8', '#10b981', '#f59e0b'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: fontColor } } } }
             });
         }
     };
 
+    // --- FILTRO MÁGICO DE TIEMPO ---
     const handleFilter = (e) => {
         const maxTime = parseInt(e.target.value);
+        const clearBtn = document.getElementById('clearFilter');
         if (maxTime > 0) {
-            if(clearFilter) clearFilter.classList.remove('hidden');
+            clearBtn.classList.remove('hidden');
             UI.render(tasks.filter(task => task.time <= maxTime));
         } else {
-            if(clearFilter) clearFilter.classList.add('hidden');
+            clearBtn.classList.add('hidden');
             UI.render(tasks);
         }
     };
 
-    // INIT
-    const init = () => {
-        if(form) form.addEventListener('submit', addTask);
-        if(timeFilter) timeFilter.addEventListener('input', handleFilter);
-        if(clearFilter) clearFilter.addEventListener('click', () => { timeFilter.value = ''; clearFilter.classList.add('hidden'); UI.render(tasks); });
-        if(exitFocusBtn) exitFocusBtn.addEventListener('click', stopFocus);
-        if(themeBtn) {
-            themeBtn.addEventListener('click', () => {
-                const html = document.documentElement;
-                const isDark = html.getAttribute('data-theme') === 'dark';
-                html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-                themeBtn.textContent = isDark ? '🌙 Oscuro' : '☀️ Claro';
-            });
-        }
-        
-        // Listener del Botón de Login
-        document.getElementById('googleLoginBtn').addEventListener('click', login);
-
-       // Atrapamos las dos pantallas al inicio de tu app.js
-const pantallaLogin = document.getElementById("pantalla-login");
-const pantallaDashboard = document.getElementById("pantalla-dashboard");
-
-// Cuando Firebase nos avisa si hay usuario o no...
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // EL USUARIO ENTRÓ: Ocultamos el login, mostramos el dashboard
-    pantallaLogin.classList.add("oculto");
-    pantallaDashboard.classList.remove("oculto");
-    
-    // (Aquí ya debes tener tu código que carga las tareas...)
-
-  } else {
-    // EL USUARIO SALIÓ: Mostramos el login, ocultamos el dashboard
-    pantallaLogin.classList.remove("oculto");
-    pantallaDashboard.classList.add("oculto");
-  }
-});
-
-    // Función de Gemini IA (Mantengo la que pusimos antes)
+    // --- GEMINI IA ---
     const askGemini = async () => {
-        const API_KEY = 'AQUI_VA_TU_CLAVE_SECRETA_QUE_COPIASTE'; 
+        const API_KEY = 'AQUI_VA_TU_CLAVE_DE_GEMINI'; // 🚨 RECUERDA PONER TU CLAVE
         const aiCard = document.getElementById('aiResponseCard');
         const aiText = document.getElementById('aiResponseText');
-        const aiBtn = document.getElementById('askAIBtn');
-        const activeTasks = tasks.filter(t => (t.status === 'today' || t.status === 'week') && !t.completed);
+        const active = tasks.filter(t => (t.status === 'today' || t.status === 'week') && !t.completed);
         
-        if(activeTasks.length === 0) { alert("Tu pizarra está vacía."); return; }
+        if(active.length === 0) { showToast("Tu pizarra está vacía. No molestes a la IA. 🤖"); return; }
         aiCard.classList.remove('hidden');
         aiText.innerHTML = '<i>Pensando... 🧠💭</i>';
-        aiBtn.disabled = true;
 
-        const tasksList = activeTasks.map(t => `- ${t.title} (${t.time} min)`).join('\n');
-        const prompt = `Eres un experto coach de productividad. Analiza esta lista de tareas pendientes del usuario:\n${tasksList}\n\nEscribe un consejo motivador y directo diciéndole por qué tarea empezar.`;
+        const tasksList = active.map(t => `- ${t.title} (${t.time} min)`).join('\n');
+        const prompt = `Eres un coach de productividad sarcástico. Analiza esta lista de tareas:\n${tasksList}\n\nDile por qué tarea empezar hoy y regáñalo sutilmente por procrastinar.`;
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
-            if (!response.ok) throw new Error('Fallo en la conexión');
             const data = await response.json();
-            aiText.innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-        } catch (error) {
-            aiText.innerHTML = '❌ Hubo un error de conexión con la IA.';
-        } finally { aiBtn.disabled = false; }
+            aiText.innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--accent-blue)">$1</b>');
+        } catch (error) { aiText.innerHTML = '❌ La IA también está procrastinando (Fallo de conexión).'; } 
     };
 
-    return { init, toggleComplete, deleteTask, startFocus, switchTab, moveTask, login, logout, askGemini };
+    // --- AUTH ---
+    const login = () => signInWithPopup(auth, provider).catch(console.error);
+    const logout = () => signOut(auth).then(() => {
+        tasks = []; 
+        document.getElementById('mainDashboard').classList.add('hidden');
+        document.getElementById('loginScreen').classList.remove('hidden');
+    });
+
+    // --- INICIALIZADOR ---
+    const init = () => {
+        document.getElementById('taskForm').addEventListener('submit', addTask);
+        document.getElementById('exitFocus').addEventListener('click', stopFocus);
+        document.getElementById('googleLoginBtn').addEventListener('click', login);
+        
+        const timeFilter = document.getElementById('timeFilter');
+        const clearFilter = document.getElementById('clearFilter');
+        timeFilter.addEventListener('input', handleFilter);
+        clearFilter.addEventListener('click', () => { timeFilter.value = ''; clearFilter.classList.add('hidden'); UI.render(tasks); });
+
+        // Vigía de Google
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainDashboard').classList.remove('hidden');
+                Storage.listen(); // Descarga los datos mágicamente
+            } else {
+                currentUser = null;
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('mainDashboard').classList.add('hidden');
+            }
+        });
+    };
+
+    return { init, toggleComplete, deleteTask, startFocus, moveTask, switchTab, toggleTheme, clearAllData, login, logout, askGemini };
 })();
 
-// HACER GLOBAL PARA QUE EL HTML LO PUEDA LLAMAR (Requisito de módulos)
+// HACERLO GLOBAL PARA EL HTML
 window.App = App;
-
 document.addEventListener('DOMContentLoaded', App.init);
