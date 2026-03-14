@@ -340,7 +340,7 @@ const App = (() => {
         });
     };
 
-    return { init, toggleComplete, deleteTask, startFocus, moveTask, switchTab, toggleTheme, clearAllData, login, logout, askGemini };
+       return { init, toggleComplete, deleteTask, startFocus, moveTask, switchTab, toggleTheme, clearAllData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop };
 })();
 
 // HACERLO GLOBAL PARA EL HTML
