@@ -121,27 +121,26 @@ const App = (() => {
     const moveTask = (id, newStatus) => { const t = tasks.find(x => x.id === id); if(t) { t.status = newStatus; Storage.save(); } };
 
         // --- NAVEGACIÓN Y EXPORTACIÓN ---
+       // --- NAVEGACIÓN CORREGIDA ---
     const switchTab = (tab, btn) => {
-        // 1. Apagamos y ocultamos TODAS a la fuerza
+        // 1. Apagamos y ocultamos todas las pestañas primero
         document.querySelectorAll('.tab-content').forEach(t => {
-            t.style.display = 'none'; 
             t.classList.add('hidden');
-            t.classList.remove('active');
+            t.classList.remove('active'); // Le quitamos la energía a las viejas
         });
         
-        // 2. Encendemos y mostramos SOLO la elegida a la fuerza
-        const pestanaActual = document.getElementById(`tab-${tab}`);
-        if(pestanaActual) {
-            pestanaActual.style.display = 'block'; // Esto anula cualquier error visual
-            pestanaActual.classList.remove('hidden');
-            pestanaActual.classList.add('active');
+        // 2. Encendemos y mostramos SOLO la pestaña que tocaste
+        const targetTab = document.getElementById(`tab-${tab}`);
+        if (targetTab) {
+            targetTab.classList.remove('hidden');
+            targetTab.classList.add('active'); // ¡ESTO FALTABA! La chispa de vida.
         }
 
-        // 3. Iluminamos el botón del menú
+        // 3. Pintamos el botón del menú de azul
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
         
-        // 4. Cargamos gráfico si es historial
+        // 4. Cargamos gráfico si toca
         if(tab === 'historial') UI.renderChart();
     };
     const toggleTheme = () => {
