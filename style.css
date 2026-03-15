@@ -173,3 +173,38 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 10
 .kanban-card[draggable="true"] { cursor: grab; }
 .kanban-card[draggable="true"]:active { cursor: grabbing; }
 .drag-over { background: rgba(56, 189, 248, 0.1) !important; border: 2px dashed var(--accent-blue) !important; transform: scale(1.02); transition: all 0.2s ease; }
+/* =========================================
+   SISTEMA DE GAMIFICACIÓN (HISTORIAL)
+   ========================================= */
+.metrics-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+    gap: 15px; 
+}
+.metric-card { 
+    text-align: center; 
+    padding: 1.5rem 1rem; 
+}
+.metric-card h4 { 
+    margin: 0; 
+    font-size: 0.85rem; 
+    color: var(--text-muted); 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+}
+.metric-value { 
+    font-size: 2rem; 
+    font-weight: 700; 
+    margin-top: 10px; 
+    text-shadow: 0 0 15px currentColor; 
+}
+
+/* Nuevo estilo para la lista de tareas completadas */
+.history-item { 
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px;
+    border-left: 4px solid var(--cta-green); margin-bottom: 10px;
+    transition: transform 0.2s;
+}
+.history-item:hover { transform: translateX(5px); background: rgba(34, 197, 94, 0.1); }
+.history-item-info { display: flex; flex-direction: column; gap: 3px; }
