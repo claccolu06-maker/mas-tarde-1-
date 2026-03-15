@@ -2,9 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-// =======================================================
-// 🚨 TUS CLAVES DE FIREBASE (No las borres)
-// =======================================================
+// 🚨 TUS CLAVES DE FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyCz45FGoqkYt9BS4J1_UjkBu6gSTHp0QOU",
   authDomain: "smart-time-hub.firebaseapp.com",
@@ -26,9 +24,9 @@ const App = (() => {
     let tasks = [];
     let focusInterval;
     let myChart = null;
-    let draggedTaskId = null; // Para el Drag & Drop
+    let draggedTaskId = null; 
 
-    // --- TOASTS SARCÁSTICOS ---
+    // --- TOASTS ---
     const showToast = (msg) => {
         const c = document.getElementById('toast-container');
         const t = document.createElement('div');
@@ -36,17 +34,49 @@ const App = (() => {
         c.appendChild(t); setTimeout(() => t.remove(), 4000);
     };
 
-    // --- CONEXIÓN NUBE FIREBASE ---
+    // --- CONEXIÓN NUBE FIREBASE (CON ESCUDO ANTI-BUGS) ---
     const Storage = {
         save: () => { if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/tasks'), tasks); },
         listen: () => {
-            if(currentUser) onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => {
-                tasks = snapshot.val() || []; UI.render(); 
-            });
+            if(currentUser) {
+                onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => {
+                    const data = snapshot.val();
+                    // Escudo: Firebase a veces rompe los Arrays. Esto lo repara automáticamente.
+                    if (!data) tasks = [];
+                    else if (Array.isArray(data)) tasks = data;
+                    else tasks = Object.values(data);
+                    
+                    UI.render(); 
+                });
+            }
         }
     };
 
-    // --- MODO DIOS: DRAG & DROP ---
+    // --- NAVEGACIÓN A PRUEBA DE BALAS ---
+    const switchTab = (tab, btn) => {
+        // 1. Limpiamos TODA la basura de las clases (hidden y active)
+        const allTabs = document.querySelectorAll('.tab-content');
+        allTabs.forEach(t => {
+            t.classList.remove('active');
+            t.classList.remove('hidden'); // Eliminamos el veneno
+            t.style.display = 'none'; // Las forzamos a desaparecer
+        });
+        
+        // 2. Encendemos a la fuerza la que elegiste
+        const targetTab = document.getElementById(`tab-${tab}`);
+        if(targetTab) {
+            targetTab.classList.add('active');
+            targetTab.style.display = 'block'; // La forzamos a aparecer
+        }
+
+        // 3. Colores de los botones
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        
+        if(tab === 'historial') UI.renderChart();
+    };
+
+    // --- DRAG & DROP ---
     const dragStart = (e, id) => { draggedTaskId = id; e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', id); };
     const allowDrop = (e) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.add('drag-over'); };
     const dragLeave = (e) => { const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); };
@@ -55,44 +85,6 @@ const App = (() => {
         const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over');
         if(draggedTaskId) { moveTask(draggedTaskId, status); draggedTaskId = null; }
     };
-
-    // --- LÁPIZ MÁGICO (EDICIÓN) ---
-    const editTask = (id) => {
-        const task = tasks.find(t => t.id === id);
-        if (!task) return;
-        const newTitle = prompt("Corrige el nombre de la tarea:", task.title);
-        if (newTitle === null || newTitle.trim() === "") return;
-        const newTime = prompt("Cambia el tiempo estimado (minutos):", task.time);
-        if (newTime === null || isNaN(newTime) || newTime <= 0) return;
-        
-        task.title = newTitle.trim(); task.time = parseInt(newTime);
-        Storage.save(); showToast("Tarea actualizada a la perfección. ✏️");
-    };
-
-    // --- RELOJ INMORTAL (Sincronizado con el Sistema) ---
-    const startFocus = (id) => {
-        const task = tasks.find(t => t.id === id);
-        if(!task) return;
-        document.getElementById('focusTitle').textContent = task.title;
-        document.getElementById('focusOverlay').classList.remove('hidden');
-        
-        const endTime = Date.now() + (task.time * 60 * 1000);
-        
-        const updateTimer = () => {
-            const remaining = Math.round((endTime - Date.now()) / 1000);
-            if (remaining <= 0) { 
-                clearInterval(focusInterval); 
-                document.getElementById('focusTimer').textContent = "00:00"; 
-                alert('¡Tiempo terminado! Buen trabajo.'); 
-                stopFocus(); return;
-            }
-            const m = Math.floor(remaining / 60); const s = remaining % 60;
-            document.getElementById('focusTimer').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        };
-        updateTimer();
-        focusInterval = setInterval(updateTimer, 1000);
-    };
-    const stopFocus = () => { clearInterval(focusInterval); document.getElementById('focusOverlay').classList.add('hidden'); };
 
     // --- LÓGICA DE TAREAS ---
     const addTask = (e) => {
@@ -105,69 +97,58 @@ const App = (() => {
         Storage.save(); document.getElementById('taskForm').reset(); showToast("Añadida. ¡A trabajar! 👀");
     };
 
+    const editTask = (id) => {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+        const newTitle = prompt("Corrige el nombre de la tarea:", task.title);
+        if (newTitle === null || newTitle.trim() === "") return;
+        const newTime = prompt("Cambia el tiempo estimado (minutos):", task.time);
+        if (newTime === null || isNaN(newTime) || newTime <= 0) return;
+        task.title = newTitle.trim(); task.time = parseInt(newTime);
+        Storage.save(); showToast("Tarea actualizada. ✏️");
+    };
+
     const toggleComplete = (id) => { 
         const t = tasks.find(x => x.id === id); 
         if(t) { 
-            t.completed = !t.completed; 
-            Storage.save(); 
+            t.completed = !t.completed; Storage.save(); 
             if(t.completed) {
                 showToast("¡Completada! 🎉");
-                // 🎊 EXPLOSIÓN DE CONFETI
-                confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#38bdf8', '#a855f7', '#10b981', '#f59e0b'] });
+                if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#38bdf8', '#a855f7', '#10b981', '#f59e0b'] });
             } 
         } 
     };
     const deleteTask = (id) => { if(confirm('¿Destruir tarea?')) { tasks = tasks.filter(t => t.id !== id); Storage.save(); } };
     const moveTask = (id, newStatus) => { const t = tasks.find(x => x.id === id); if(t) { t.status = newStatus; Storage.save(); } };
 
-        // --- NAVEGACIÓN Y EXPORTACIÓN ---
-       // --- NAVEGACIÓN CORREGIDA ---
-    const switchTab = (tab, btn) => {
-        // 1. Apagamos y ocultamos todas las pestañas primero
-        document.querySelectorAll('.tab-content').forEach(t => {
-            t.classList.add('hidden');
-            t.classList.remove('active'); // Le quitamos la energía a las viejas
-        });
+    // --- RELOJ ---
+    const startFocus = (id) => {
+        const task = tasks.find(t => t.id === id);
+        if(!task) return;
+        document.getElementById('focusTitle').textContent = task.title;
+        document.getElementById('focusOverlay').classList.remove('hidden');
+        const endTime = Date.now() + (task.time * 60 * 1000);
         
-        // 2. Encendemos y mostramos SOLO la pestaña que tocaste
-        const targetTab = document.getElementById(`tab-${tab}`);
-        if (targetTab) {
-            targetTab.classList.remove('hidden');
-            targetTab.classList.add('active'); // ¡ESTO FALTABA! La chispa de vida.
-        }
-
-        // 3. Pintamos el botón del menú de azul
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-        
-        // 4. Cargamos gráfico si toca
-        if(tab === 'historial') UI.renderChart();
+        const updateTimer = () => {
+            const remaining = Math.round((endTime - Date.now()) / 1000);
+            if (remaining <= 0) { 
+                clearInterval(focusInterval); document.getElementById('focusTimer').textContent = "00:00"; 
+                alert('¡Tiempo terminado!'); stopFocus(); return;
+            }
+            document.getElementById('focusTimer').textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
+        };
+        updateTimer(); focusInterval = setInterval(updateTimer, 1000);
     };
-    const toggleTheme = () => {
-        const html = document.documentElement; const btn = document.getElementById('themeToggle');
-        if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); btn.textContent = '🌙 Modo Oscuro'; } 
-        else { html.setAttribute('data-theme', 'dark'); btn.textContent = '☀️ Modo Claro'; }
-    };
-
-    const clearAllData = () => { if(confirm("⚠️ ¿Borrar TODA la base de datos de Google?")) { tasks = []; Storage.save(); showToast("Sistema formateado. 🗑️"); } };
-    
-    const exportData = () => {
-        if(tasks.length === 0) { showToast("No hay datos para exportar. 📭"); return; }
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks, null, 2));
-        const download = document.createElement('a'); download.setAttribute("href", dataStr); download.setAttribute("download", "smart_time_backup.json");
-        document.body.appendChild(download); download.click(); download.remove();
-        showToast("Datos descargados con éxito. 💾");
-    };
+    const stopFocus = () => { clearInterval(focusInterval); document.getElementById('focusOverlay').classList.add('hidden'); };
 
     // --- RENDERIZADO VISUAL ---
     const UI = {
         updateStats: () => {
             if(tasks.length === 0) return;
             const completed = tasks.filter(t => t.completed); const c = completed.length;
-            document.getElementById('progressFill').style.width = `${(c / tasks.length) * 100}%`;
-            document.getElementById('statsNumbers').textContent = `${c}/${tasks.length} listas`;
+            if(document.getElementById('progressFill')) document.getElementById('progressFill').style.width = `${(c / tasks.length) * 100}%`;
+            if(document.getElementById('statsNumbers')) document.getElementById('statsNumbers').textContent = `${c}/${tasks.length} listas`;
 
-            // GAMIFICACIÓN (Niveles)
             const totalMins = completed.reduce((sum, task) => sum + (task.time || 0), 0);
             if(document.getElementById('totalMinutes')) {
                 document.getElementById('totalMinutes').textContent = `${totalMins} min`;
@@ -185,21 +166,19 @@ const App = (() => {
             let enBandeja = 0;
 
             tasks.forEach(task => {
-                // Lista de Historial
                 if (task.completed) {
-                    g.history.innerHTML += `
+                    if(g.history) g.history.innerHTML += `
                         <div class="history-item">
                             <div style="display:flex; flex-direction:column;">
                                 <span style="text-decoration:line-through; color:var(--text-muted); font-weight:bold;">${task.title}</span>
                                 <span style="font-size:0.75rem; color:var(--cta-green);">+${task.time} min de XP</span>
                             </div>
-                            <button onclick="App.toggleComplete('${task.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;" title="Deshacer victoria">↩️</button>
+                            <button onclick="App.toggleComplete('${task.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">↩️</button>
                         </div>`;
                     return;
                 }
                 if (!task.status) task.status = 'bandeja';
 
-                // Tarjeta Activa
                 const card = document.createElement('div'); card.className = `kanban-card`;
                 card.draggable = true; card.ondragstart = (e) => App.dragStart(e, task.id); card.ondragend = (e) => e.target.classList.remove('dragging');
 
@@ -216,12 +195,12 @@ const App = (() => {
                         <button style="background:none;border:none;cursor:pointer;color:var(--danger-red);" onclick="App.deleteTask('${task.id}')">🗑</button>
                     </div>`;
 
-                if (task.status === 'bandeja') { g.bandeja.appendChild(card); enBandeja++; }
-                else if (task.status === 'later') g.later.appendChild(card);
-                else if (task.status === 'week') g.week.appendChild(card);
-                else if (task.status === 'today') g.today.appendChild(card);
+                if (task.status === 'bandeja') { if(g.bandeja) g.bandeja.appendChild(card); enBandeja++; }
+                else if (task.status === 'later') { if(g.later) g.later.appendChild(card); }
+                else if (task.status === 'week') { if(g.week) g.week.appendChild(card); }
+                else if (task.status === 'today') { if(g.today) g.today.appendChild(card); }
             });
-            document.getElementById('emptyState').classList.toggle('hidden', enBandeja > 0);
+            if(document.getElementById('emptyState')) document.getElementById('emptyState').classList.toggle('hidden', enBandeja > 0);
             UI.updateStats();
         },
         renderChart: () => {
@@ -233,47 +212,51 @@ const App = (() => {
         }
     };
 
-    // --- SIMULADOR IA HOLOGRÁFICO ---
+    // --- EXTRAS ---
     const askGemini = async () => {
         const aiCard = document.getElementById('aiResponseCard'); const aiText = document.getElementById('aiResponseText');
         const active = tasks.filter(t => (t.status === 'today' || t.status === 'week') && !t.completed);
-        if(active.length === 0) { showToast("Tu pizarra está vacía. No me hagas perder el tiempo. 🤖"); return; }
-        aiCard.classList.remove('hidden'); aiText.innerHTML = '<i>Analizando tu nivel de procrastinación... 🧠💭</i>';
-        
-        const consejos = [
-            "Tu yo del futuro está llorando. Deja de mirar esta pantalla y empieza con la primera tarea de <b style='color:var(--danger-red)'>Hacer HOY</b>. 🔥",
-            "Tienes <b>" + active.length + "</b> tareas pendientes. ¿Qué tal si enciendes el <b style='color:var(--accent-blue)'>Modo Focus</b>? ⏱️",
-            "Si sigues posponiendo esto, terminarás trabajando el fin de semana. ¡A trabajar! 🤡"
-        ];
-        setTimeout(() => { aiText.innerHTML = consejos[Math.floor(Math.random() * consejos.length)]; showToast("Mensaje de la IA recibido. 📡"); }, 2500); 
+        if(active.length === 0) { showToast("Tu pizarra está vacía. 🤖"); return; }
+        aiCard.classList.remove('hidden'); aiText.innerHTML = '<i>Analizando... 🧠</i>';
+        const msg = ["Deja de procrastinar y ataca 'Hacer HOY'. 🔥", "Enciende el Modo Focus. ⏱️", "Trabaja ahora o llora el fin de semana. 🤡"];
+        setTimeout(() => { aiText.innerHTML = msg[Math.floor(Math.random() * msg.length)]; }, 2000); 
     };
 
-    // --- AUTENTICACIÓN GOOGLE ---
+    const toggleTheme = () => {
+        const html = document.documentElement; const btn = document.getElementById('themeToggle');
+        if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); btn.textContent = '🌙 Modo Oscuro'; } 
+        else { html.setAttribute('data-theme', 'dark'); btn.textContent = '☀️ Modo Claro'; }
+    };
+
+    const clearAllData = () => { if(confirm("⚠️ ¿Borrar TODA la base de datos?")) { tasks = []; Storage.save(); showToast("Formateado. 🗑️"); } };
+    const exportData = () => {
+        if(tasks.length===0) return;
+        const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks));
+        a.download = "backup.json"; document.body.appendChild(a); a.click(); a.remove();
+    };
+
     const login = () => signInWithPopup(auth, provider).catch(console.error);
     const logout = () => signOut(auth).then(() => { tasks = []; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
 
-    // --- INICIALIZACIÓN ---
     const init = () => {
-        document.getElementById('taskForm').addEventListener('submit', addTask);
-        document.getElementById('exitFocus').addEventListener('click', stopFocus);
-        document.getElementById('googleLoginBtn').addEventListener('click', login);
-         switchTab('bandeja', document.querySelector('.nav-btn.active'));
-        // Filtro Mágico
-        const tf = document.getElementById('timeFilter'); const cf = document.getElementById('clearFilter');
-        tf.addEventListener('input', (e) => { const m = parseInt(e.target.value); if(m > 0) { cf.classList.remove('hidden'); UI.render(tasks.filter(t => t.time <= m)); } else { cf.classList.add('hidden'); UI.render(tasks); } });
-        cf.addEventListener('click', () => { tf.value = ''; cf.classList.add('hidden'); UI.render(tasks); });
-
-        // Vigía Google & Carga de Perfil
+        if(document.getElementById('taskForm')) document.getElementById('taskForm').addEventListener('submit', addTask);
+        if(document.getElementById('exitFocus')) document.getElementById('exitFocus').addEventListener('click', stopFocus);
+        if(document.getElementById('googleLoginBtn')) document.getElementById('googleLoginBtn').addEventListener('click', login);
+        
         onAuthStateChanged(auth, (user) => {
             if (user) { 
                 currentUser = user; 
                 if(document.getElementById('userName')) {
-                    document.getElementById('userName').textContent = user.displayName || "Agente Secreto";
+                    document.getElementById('userName').textContent = user.displayName || "Agente";
                     document.getElementById('userEmail').textContent = user.email;
                     document.getElementById('userPhoto').src = user.photoURL || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
                 }
                 document.getElementById('loginScreen').classList.add('hidden'); 
                 document.getElementById('mainDashboard').classList.remove('hidden'); 
+                
+                // Forzamos que la Bandeja se muestre al entrar
+                switchTab('bandeja', document.querySelector('.nav-btn.active'));
+
                 Storage.listen(); 
             } else { 
                 currentUser = null; 
@@ -283,16 +266,10 @@ const App = (() => {
         });
     };
 
-    // Exportar las armas para el HTML
     return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop };
 })();
 
 window.App = App;
 document.addEventListener('DOMContentLoaded', App.init);
 
-// 🚀 REGISTRO DEL SERVICE WORKER (PARA PWA MÓVIL)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.error('Error PWA:', err));
-    });
-}
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(e=>e); }); }
