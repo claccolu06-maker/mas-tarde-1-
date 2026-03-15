@@ -248,7 +248,15 @@ const App = (() => {
         a.download = "backup.json"; document.body.appendChild(a); a.click(); a.remove();
     };
 
-    const login = () => signInWithPopup(auth, provider).catch(console.error);
+       // --- AUTENTICACIÓN GOOGLE CON REPORTE DE ERROR ---
+    const login = async () => {
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("🔥 ERROR DE LOGIN: ", error.code, error.message);
+            alert("Error al entrar con Google. Revisa la consola (F12) o desbloquea las ventanas emergentes (pop-ups).");
+        }
+    };
     const logout = () => signOut(auth).then(() => { tasks = []; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
 
     const init = () => {
