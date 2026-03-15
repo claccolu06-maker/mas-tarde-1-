@@ -3,26 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart-Time Hub</title>
+    <title>Smart-Time Hub | Team A</title>
     
-    <!-- ETIQUETAS PARA APP MÓVIL (PWA) -->
+    <!-- PWA (App Instalable) -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/6104/6104663.png">
     
-    <!-- Tipografía y Gráficos -->
+    <!-- Librerías Externas (Gráficos y Confeti) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="style.css">
-        <!-- Librería para Gráficos (Chart.js) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Cañones de Confeti (Nueva Línea) -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- PANTALLA DE LOGIN -->
+    <!-- ================= PANTALLA DE LOGIN ================= -->
     <div id="loginScreen" class="login-screen">
         <div class="login-card glass-panel">
             <div class="logo">
@@ -35,8 +33,9 @@
         </div>
     </div>
 
-    <!-- DASHBOARD -->
+    <!-- ================= DASHBOARD PRINCIPAL ================= -->
     <div id="mainDashboard" class="dashboard-layout hidden">
+        
         <!-- MENÚ LATERAL -->
         <aside class="sidebar glass-panel">
             <div class="logo">
@@ -54,14 +53,15 @@
             </div>
         </aside>
 
-        <!-- CONTENIDO -->
+        <!-- ÁREA DE CONTENIDO -->
         <main class="main-content">
             
-            <!-- BANDEJA -->
+            <!-- PESTAÑA 1: BANDEJA -->
             <section id="tab-bandeja" class="tab-content active">
                 <header class="tab-header"><h2>Bandeja de Entrada</h2></header>
+                
                 <div class="stats-container glass-panel">
-                    <div class="stats-text"><span id="statsMessage">¡Vamos!</span><span id="statsNumbers">0/0 completadas</span></div>
+                    <div class="stats-text"><span id="statsMessage">¡Vamos por el día!</span><span id="statsNumbers">0/0 completadas</span></div>
                     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
                 </div>
 
@@ -70,18 +70,34 @@
                     <div style="display: flex; gap: 10px; margin-top: 10px; width: 100%;">
                         <input type="text" id="titleInput" placeholder="¿De qué trata?" required style="flex: 2;">
                         <select id="categoryInput" style="flex: 1;">
-                            <option value="video">🎥 Video</option><option value="articulo">📝 Artículo</option>
-                            <option value="curso">🎓 Curso</option><option value="proyecto">🚀 Proyecto</option>
+                            <option value="video">🎥 Video</option>
+                            <option value="articulo">📝 Artículo</option>
+                            <option value="curso">🎓 Curso</option>
+                            <option value="proyecto">🚀 Proyecto</option>
                         </select>
                         <input type="number" id="timeInput" placeholder="Min" min="1" required style="flex: 1;">
                     </div>
                     <button type="submit" class="cta-button" style="margin-top: 15px;">Guardar Tarea ✨</button>
                 </form>
 
+                <div class="magic-filter glass-panel">
+                    <label for="timeFilter">⏱️ ¿Cuánto tiempo libre tienes?</label>
+                    <div class="filter-controls">
+                        <input type="number" id="timeFilter" placeholder="Ej. 15" min="1">
+                        <button id="clearFilter" class="btn-icon btn-link hidden">✖ Limpiar</button>
+                    </div>
+                </div>
+
+                <div id="emptyState" class="empty-state hidden glass-panel">
+                    <div class="empty-icon">🌱</div>
+                    <h3>Bandeja vacía.</h3>
+                    <p>Guarda algo para después.</p>
+                </div>
+
                 <div id="tasksGrid" class="tasks-grid"></div>
             </section>
 
-            <!-- KANBAN (DRAG & DROP) -->
+            <!-- PESTAÑA 2: PIZARRA KANBAN -->
             <section id="tab-pizarra" class="tab-content hidden">
                 <header class="tab-header"><h2>📋 Mi Pizarra</h2></header>
                 
@@ -90,7 +106,7 @@
                         ✨ Que la IA organice mi semana
                     </button>
                     <div id="aiResponseCard" class="ai-response-card hidden">
-                        <div class="ai-header">🤖 Entrenador:</div>
+                        <div class="ai-header">🤖 Tu Entrenador Sarcástico:</div>
                         <p id="aiResponseText">Pensando...</p>
                     </div>
                 </div>
@@ -111,29 +127,73 @@
                 </div>
             </section>
 
-            <!-- HISTORIAL -->
+            <!-- PESTAÑA 3: HISTORIAL & RPG -->
             <section id="tab-historial" class="tab-content hidden">
-                <header class="tab-header"><h2>📊 Tu Progreso</h2></header>
+                <header class="tab-header">
+                    <h2>📊 Tu Progreso</h2>
+                    <p class="subtitle">Cada minuto cuenta. Sube de nivel completando tareas.</p>
+                </header>
+
+                <div class="metrics-grid" style="margin-bottom: 20px;">
+                    <div class="metric-card glass-panel">
+                        <h4>Nivel Actual</h4>
+                        <div id="userLevel" class="metric-value">Novato 🌱</div>
+                    </div>
+                    <div class="metric-card glass-panel">
+                        <h4>Tiempo Invertido</h4>
+                        <div id="totalMinutes" class="metric-value" style="color: var(--accent-blue);">0 min</div>
+                    </div>
+                    <div class="metric-card glass-panel">
+                        <h4>Misiones Superadas</h4>
+                        <div id="totalCompleted" class="metric-value" style="color: var(--cta-green);">0</div>
+                    </div>
+                </div>
+
                 <div class="stats-grid">
-                    <div class="chart-container glass-panel"><div style="height: 250px;"><canvas id="statsChart"></canvas></div></div>
-                    <div class="history-list-container glass-panel"><h3>Victorias 🏆</h3><div id="historyList" class="history-list"></div></div>
+                    <div class="chart-container glass-panel">
+                        <h3>Distribución de Tareas</h3>
+                        <div style="height: 250px; margin-top: 10px;"><canvas id="statsChart"></canvas></div>
+                    </div>
+                    <div class="history-list-container glass-panel">
+                        <h3>Registro de Victorias 🏆</h3>
+                        <div id="historyList" class="history-list"></div>
+                    </div>
                 </div>
             </section>
 
-            <!-- AJUSTES -->
+            <!-- PESTAÑA 4: AJUSTES -->
             <section id="tab-ajustes" class="tab-content hidden">
-                <header class="tab-header"><h2>⚙️ Ajustes</h2></header>
+                <header class="tab-header"><h2>⚙️ Ajustes del Sistema</h2></header>
                 <div class="settings-grid">
+                    
+                    <div class="settings-card glass-panel profile-card">
+                        <div class="profile-header">
+                            <img id="userPhoto" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Perfil" class="profile-img">
+                            <div class="profile-info">
+                                <h3 id="userName">Cargando...</h3>
+                                <p id="userEmail">cargando@correo.com</p>
+                                <span class="badge">Cuenta Sincronizada ☁️</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card glass-panel">
+                        <h3>💾 Copia de Seguridad</h3>
+                        <p>Descarga un archivo JSON con todas tus tareas.</p>
+                        <button class="cta-button" onclick="App.exportData()" style="background: var(--accent-blue);">⬇️ Descargar Mis Datos</button>
+                    </div>
+
                     <div class="settings-card glass-panel danger-zone">
                         <h3>⚠️ Zona de Peligro</h3>
-                        <button class="cta-button danger" onclick="App.clearAllData()">Formatear Sistema (Borrar Todo)</button>
+                        <p>Borra absolutamente todas las tareas y el historial en la nube.</p>
+                        <button class="cta-button danger" onclick="App.clearAllData()">🗑️ Formatear Sistema</button>
                     </div>
                 </div>
             </section>
         </main>
     </div>
 
-    <!-- MODO FOCUS INMORTAL -->
+    <!-- ================= MODO FOCUS ================= -->
     <div id="focusOverlay" class="focus-overlay hidden">
         <div class="focus-content glass-panel" style="background: rgba(15, 23, 42, 0.9);">
             <span class="focus-badge">MODO ZEN ACTIVADO 🧘‍♂️</span>
@@ -145,6 +205,7 @@
 
     <!-- TOASTS -->
     <div id="toast-container"></div>
+    
     <script type="module" src="app.js"></script>
 </body>
 </html>
