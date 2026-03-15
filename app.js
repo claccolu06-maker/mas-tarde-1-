@@ -120,25 +120,28 @@ const App = (() => {
     const deleteTask = (id) => { if(confirm('¿Destruir tarea?')) { tasks = tasks.filter(t => t.id !== id); Storage.save(); } };
     const moveTask = (id, newStatus) => { const t = tasks.find(x => x.id === id); if(t) { t.status = newStatus; Storage.save(); } };
 
-    // --- NAVEGACIÓN Y EXPORTACIÓN ---
-       // --- NAVEGACIÓN Y EXPORTACIÓN ---
+        // --- NAVEGACIÓN Y EXPORTACIÓN ---
     const switchTab = (tab, btn) => {
-        // 1. Apagamos TODAS las pestañas y las ocultamos
+        // 1. Apagamos y ocultamos TODAS a la fuerza
         document.querySelectorAll('.tab-content').forEach(t => {
+            t.style.display = 'none'; 
             t.classList.add('hidden');
             t.classList.remove('active');
         });
         
-        // 2. Encendemos y mostramos SOLO la que tocaste
+        // 2. Encendemos y mostramos SOLO la elegida a la fuerza
         const pestanaActual = document.getElementById(`tab-${tab}`);
-        pestanaActual.classList.remove('hidden');
-        pestanaActual.classList.add('active');
+        if(pestanaActual) {
+            pestanaActual.style.display = 'block'; // Esto anula cualquier error visual
+            pestanaActual.classList.remove('hidden');
+            pestanaActual.classList.add('active');
+        }
 
         // 3. Iluminamos el botón del menú
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
         
-        // 4. Si es historial, cargamos el gráfico
+        // 4. Cargamos gráfico si es historial
         if(tab === 'historial') UI.renderChart();
     };
     const toggleTheme = () => {
@@ -255,7 +258,7 @@ const App = (() => {
         document.getElementById('taskForm').addEventListener('submit', addTask);
         document.getElementById('exitFocus').addEventListener('click', stopFocus);
         document.getElementById('googleLoginBtn').addEventListener('click', login);
-        
+         switchTab('bandeja', document.querySelector('.nav-btn.active'));
         // Filtro Mágico
         const tf = document.getElementById('timeFilter'); const cf = document.getElementById('clearFilter');
         tf.addEventListener('input', (e) => { const m = parseInt(e.target.value); if(m > 0) { cf.classList.remove('hidden'); UI.render(tasks.filter(t => t.time <= m)); } else { cf.classList.add('hidden'); UI.render(tasks); } });
