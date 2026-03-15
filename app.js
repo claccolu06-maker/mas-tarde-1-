@@ -160,33 +160,53 @@ const App = (() => {
                 const levelEl = document.getElementById('userLevel'); levelEl.innerHTML = level; levelEl.style.color = color;
             }
         },
-        render: () => {
-            const g = { bandeja: document.getElementById('tasksGrid'), later: document.getElementById('column-later'), week: document.getElementById('column-week'), today: document.getElementById('column-today'), history: document.getElementById('historyList') };
+              render: () => {
+            const g = { 
+                bandeja: document.getElementById('tasksGrid'), 
+                later: document.getElementById('column-later'), 
+                week: document.getElementById('column-week'), 
+                today: document.getElementById('column-today'), 
+                history: document.getElementById('historyList') 
+            };
+            
+            // Limpiamos los contenedores
             Object.values(g).forEach(el => { if(el) el.innerHTML = ''; });
             let enBandeja = 0;
 
             tasks.forEach(task => {
+                // ESCUDO ANTI-BUGS: Si la tarea es vieja y no tiene datos, le ponemos valores por defecto
+                const tituloSeguro = task.title || "Tarea sin título";
+                const categoriaSegura = task.category || "proyecto";
+                const tiempoSeguro = task.time || 15;
+                const statusSeguro = task.status || "bandeja";
+
                 if (task.completed) {
                     if(g.history) g.history.innerHTML += `
                         <div class="history-item">
                             <div style="display:flex; flex-direction:column;">
-                                <span style="text-decoration:line-through; color:var(--text-muted); font-weight:bold;">${task.title}</span>
-                                <span style="font-size:0.75rem; color:var(--cta-green);">+${task.time} min de XP</span>
+                                <span style="text-decoration:line-through; color:var(--text-muted); font-weight:bold;">${tituloSeguro}</span>
+                                <span style="font-size:0.75rem; color:var(--cta-green);">+${tiempoSeguro} min de XP</span>
                             </div>
                             <button onclick="App.toggleComplete('${task.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">↩️</button>
                         </div>`;
                     return;
                 }
-                if (!task.status) task.status = 'bandeja';
 
-                const card = document.createElement('div'); card.className = `kanban-card`;
-                card.draggable = true; card.ondragstart = (e) => App.dragStart(e, task.id); card.ondragend = (e) => e.target.classList.remove('dragging');
+                // Tarjeta Activa
+                const card = document.createElement('div'); 
+                card.className = `kanban-card`;
+                card.draggable = true; 
+                card.ondragstart = (e) => App.dragStart(e, task.id); 
+                card.ondragend = (e) => e.target.classList.remove('dragging');
 
                 card.innerHTML = `
-                    <div style="font-size:0.8rem; margin-bottom: 5px; font-weight:bold;" class="pill ${task.category}">${task.category.toUpperCase()} | ⏱ ${task.time}m</div>
-                    <h4 style="margin: 0; font-size: 1rem;">${task.title}</h4>
+                    <div style="font-size:0.8rem; margin-bottom: 5px; font-weight:bold;" class="pill ${categoriaSegura}">${categoriaSegura.toUpperCase()} | ⏱ ${tiempoSeguro}m</div>
+                    <h4 style="margin: 0; font-size: 1rem;">${tituloSeguro}</h4>
                     <select style="margin:10px 0; width:100%; padding:5px; border-radius:5px; background:var(--input-bg); color:var(--text-main)" onchange="App.moveTask('${task.id}', this.value)">
-                        <option value="bandeja" ${task.status === 'bandeja'?'selected':''}>📥 Bandeja</option><option value="later" ${task.status === 'later'?'selected':''}>⏳ Algún día</option><option value="week" ${task.status === 'week'?'selected':''}>📅 Esta Semana</option><option value="today" ${task.status === 'today'?'selected':''}>🔥 Hacer HOY</option>
+                        <option value="bandeja" ${statusSeguro === 'bandeja'?'selected':''}>📥 Bandeja</option>
+                        <option value="later" ${statusSeguro === 'later'?'selected':''}>⏳ Algún día</option>
+                        <option value="week" ${statusSeguro === 'week'?'selected':''}>📅 Esta Semana</option>
+                        <option value="today" ${statusSeguro === 'today'?'selected':''}>🔥 Hacer HOY</option>
                     </select>
                     <div style="display:flex; justify-content:space-between; margin-top: 10px;">
                         <button style="background:none;border:none;cursor:pointer;color:var(--accent-blue);" onclick="App.startFocus('${task.id}')">▶️ Focus</button>
@@ -195,22 +215,15 @@ const App = (() => {
                         <button style="background:none;border:none;cursor:pointer;color:var(--danger-red);" onclick="App.deleteTask('${task.id}')">🗑</button>
                     </div>`;
 
-                if (task.status === 'bandeja') { if(g.bandeja) g.bandeja.appendChild(card); enBandeja++; }
-                else if (task.status === 'later') { if(g.later) g.later.appendChild(card); }
-                else if (task.status === 'week') { if(g.week) g.week.appendChild(card); }
-                else if (task.status === 'today') { if(g.today) g.today.appendChild(card); }
+                if (statusSeguro === 'bandeja') { if(g.bandeja) g.bandeja.appendChild(card); enBandeja++; }
+                else if (statusSeguro === 'later') { if(g.later) g.later.appendChild(card); }
+                else if (statusSeguro === 'week') { if(g.week) g.week.appendChild(card); }
+                else if (statusSeguro === 'today') { if(g.today) g.today.appendChild(card); }
             });
+            
             if(document.getElementById('emptyState')) document.getElementById('emptyState').classList.toggle('hidden', enBandeja > 0);
             UI.updateStats();
         },
-        renderChart: () => {
-            const ctx = document.getElementById('statsChart'); if(!ctx) return;
-            const comp = tasks.filter(t => t.completed); if(myChart) myChart.destroy();
-            const counts = ['video', 'articulo', 'curso', 'proyecto'].map(c => comp.filter(t => t.category === c).length);
-            const fontColor = document.documentElement.getAttribute('data-theme') === 'dark' ? 'white' : 'black';
-            myChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['Videos', 'Artículos', 'Cursos', 'Proyectos'], datasets: [{ data: counts, backgroundColor: ['#a855f7', '#38bdf8', '#10b981', '#f59e0b'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: fontColor } } } }});
-        }
-    };
 
     // --- EXTRAS ---
     const askGemini = async () => {
