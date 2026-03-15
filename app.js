@@ -121,14 +121,26 @@ const App = (() => {
     const moveTask = (id, newStatus) => { const t = tasks.find(x => x.id === id); if(t) { t.status = newStatus; Storage.save(); } };
 
     // --- NAVEGACIÓN Y EXPORTACIÓN ---
+       // --- NAVEGACIÓN Y EXPORTACIÓN ---
     const switchTab = (tab, btn) => {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-        document.getElementById(`tab-${tab}`).classList.remove('hidden');
+        // 1. Apagamos TODAS las pestañas y las ocultamos
+        document.querySelectorAll('.tab-content').forEach(t => {
+            t.classList.add('hidden');
+            t.classList.remove('active');
+        });
+        
+        // 2. Encendemos y mostramos SOLO la que tocaste
+        const pestanaActual = document.getElementById(`tab-${tab}`);
+        pestanaActual.classList.remove('hidden');
+        pestanaActual.classList.add('active');
+
+        // 3. Iluminamos el botón del menú
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
+        
+        // 4. Si es historial, cargamos el gráfico
         if(tab === 'historial') UI.renderChart();
     };
-
     const toggleTheme = () => {
         const html = document.documentElement; const btn = document.getElementById('themeToggle');
         if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); btn.textContent = '🌙 Modo Oscuro'; } 
