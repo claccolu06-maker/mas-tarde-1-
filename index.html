@@ -56,7 +56,7 @@
         <!-- ÁREA DE CONTENIDO -->
         <main class="main-content">
             
-            <!-- PESTAÑA 1: BANDEJA -->
+                        <!-- PESTAÑA 1: BANDEJA -->
             <section id="tab-bandeja" class="tab-content active">
                 <header class="tab-header"><h2>Bandeja de Entrada</h2></header>
                 
@@ -65,26 +65,47 @@
                     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
                 </div>
 
+                <!-- FORMULARIO ACTUALIZADO CON ENERGÍA -->
                 <form id="taskForm" class="task-form glass-panel">
                     <div class="input-group full-width"><input type="url" id="urlInput" placeholder="URL (opcional)"></div>
-                    <div style="display: flex; gap: 10px; margin-top: 10px; width: 100%;">
-                        <input type="text" id="titleInput" placeholder="¿De qué trata?" required style="flex: 2;">
-                        <select id="categoryInput" style="flex: 1;">
-                            <option value="video">🎥 Video</option>
-                            <option value="articulo">📝 Artículo</option>
-                            <option value="curso">🎓 Curso</option>
-                            <option value="proyecto">🚀 Proyecto</option>
+                    <div style="display: flex; gap: 10px; margin-top: 10px; width: 100%; flex-wrap: wrap;">
+                        <input type="text" id="titleInput" placeholder="¿De qué trata?" required style="flex: 2; min-width: 150px;">
+                        
+                        <select id="categoryInput" style="flex: 1; min-width: 100px;">
+                            <option value="video">🎥 Video</option><option value="articulo">📝 Artículo</option>
+                            <option value="curso">🎓 Curso</option><option value="proyecto">🚀 Proyecto</option>
                         </select>
-                        <input type="number" id="timeInput" placeholder="Min" min="1" required style="flex: 1;">
+                        
+                        <!-- NUEVO: SELECTOR DE ENERGÍA -->
+                        <select id="energyInput" style="flex: 1; min-width: 100px;">
+                            <option value="alta">⚡ Alta Energía</option>
+                            <option value="media" selected>🔋 Energía Media</option>
+                            <option value="baja">🪫 Baja Energía</option>
+                        </select>
+
+                        <input type="number" id="timeInput" placeholder="Min" min="1" required style="flex: 1; min-width: 70px;">
                     </div>
                     <button type="submit" class="cta-button" style="margin-top: 15px;">Guardar Tarea ✨</button>
                 </form>
 
+                <!-- FILTROS MÁGICOS ACTUALIZADOS -->
                 <div class="magic-filter glass-panel">
-                    <label for="timeFilter">⏱️ ¿Cuánto tiempo libre tienes?</label>
-                    <div class="filter-controls">
-                        <input type="number" id="timeFilter" placeholder="Ej. 15" min="1">
-                        <button id="clearFilter" class="btn-icon btn-link hidden">✖ Limpiar</button>
+                    <div style="width: 100%;">
+                        <label for="timeFilter">⏱️ ¿Cuánto tiempo libre tienes?</label>
+                        <div class="filter-controls" style="margin-top: 5px;">
+                            <input type="number" id="timeFilter" placeholder="Ej. 15 min" min="1">
+                            <button id="clearFilter" class="btn-icon btn-link hidden">✖ Limpiar</button>
+                        </div>
+                    </div>
+                    
+                    <div style="width: 100%; margin-top: 15px;">
+                        <label>🔋 ¿Cómo está tu energía ahora mismo?</label>
+                        <div class="energy-filters">
+                            <button class="btn-energy active" onclick="App.setEnergyFilter('all', this)">Todas</button>
+                            <button class="btn-energy" onclick="App.setEnergyFilter('alta', this)">⚡ Alta</button>
+                            <button class="btn-energy" onclick="App.setEnergyFilter('media', this)">🔋 Media</button>
+                            <button class="btn-energy" onclick="App.setEnergyFilter('baja', this)">🪫 Baja</button>
+                        </div>
                     </div>
                 </div>
 
