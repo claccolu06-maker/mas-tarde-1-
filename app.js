@@ -220,7 +220,7 @@ const App = (() => {
                 card.innerHTML = `
                     <div style="font-size:0.8rem; margin-bottom: 5px; font-weight:bold;" class="pill ${s_cat}">${s_cat.toUpperCase()} | ⏱ ${s_time}m | ${energyIcon}</div>
                     <h4 style="margin: 0; font-size: 1rem;">${s_title}</h4>
-                    <select style="margin:10px 0; width:100%; padding:5px; border-radius:5px; background:var(--input-bg); color:var(--text-main)" onchange="App.moveTask('${task.id}', this.value)">
+                   <select aria-label="Cambiar estado de la tarea" style="margin:10px 0; width:100%; padding:5px; border-radius:5px; background:var(--input-bg); color:var(--text-main)" onchange="App.moveTask('${task.id}', this.value)">
                         <option value="bandeja" ${s_status === 'bandeja'?'selected':''}>📥 Bandeja</option><option value="later" ${s_status === 'later'?'selected':''}>⏳ Algún día</option><option value="week" ${s_status === 'week'?'selected':''}>📅 Esta Semana</option><option value="today" ${s_status === 'today'?'selected':''}>🔥 Hacer HOY</option>
                     </select>
                     <div style="display:flex; justify-content:space-between; margin-top: 10px;">
