@@ -6,13 +6,13 @@
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "icons": [
-    {
-      "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Hourglass_icon.svg/512px-Hourglass_icon.svg.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ],
+ "icons": [
+  {
+    "src": "./icon.png",
+    "sizes": "512x512",
+    "type": "image/png"
+  }
+],
   "share_target": {
     "action": "./index.html",
     "method": "GET",
