@@ -141,3 +141,9 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 10
 }
 .btn-energy:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
 .btn-energy.active { background: rgba(56, 189, 248, 0.2); border-color: var(--accent-blue); font-weight: bold; }
+/* --- CARPETAS --- */
+.sidebar-divider { height: 1px; background: var(--border-color); margin: 15px 0; }
+.sidebar-title { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; padding-left: 10px; }
+.folder-list { display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto; }
+.add-folder-btn { color: var(--cta-green) !important; border: 1px dashed var(--cta-green) !important; margin-top: 10px; text-align: center; }
+.add-folder-btn:hover { background: rgba(34, 197, 94, 0.1) !important; }
