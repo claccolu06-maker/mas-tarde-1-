@@ -147,3 +147,9 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 10
 .folder-list { display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto; }
 .add-folder-btn { color: var(--cta-green) !important; border: 1px dashed var(--cta-green) !important; margin-top: 10px; text-align: center; }
 .add-folder-btn:hover { background: rgba(34, 197, 94, 0.1) !important; }
+
+/* --- BORRAR CARPETAS --- */
+.folder-item { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+.folder-item .nav-btn { flex-grow: 1; margin: 0; }
+.delete-folder-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 5px 10px; border-radius: 8px; font-size: 0.8rem; transition: 0.2s; }
+.delete-folder-btn:hover { background: rgba(239, 68, 68, 0.1); color: var(--danger-red); }
