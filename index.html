@@ -5,45 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Smart-Time Hub | Team A</title>
     
+    <!-- PWA (App Instalable) -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
+    <!-- Truco para usar un Emoji como icono de pestaña y quitar el error favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏳</text></svg>">
     
-    <!-- ICONO LOCAL (Requiere que subas icon.png a tu carpeta) -->
+    <!-- ICONO LOCAL (Asegúrate de tener icon.png en tu carpeta) -->
     <link rel="apple-touch-icon" href="./icon.png">
     
+    <!-- Librerías Externas (Gráficos y Confeti) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
+    <!-- Estilos -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+    <!-- ================= PANTALLA DE LOGIN ================= -->
     <div id="loginScreen" class="login-screen">
         <div class="login-card glass-panel">
-            <div class="logo"><h1 class="neon-text">Smart-Time <span>Hub</span></h1></div>
+            <div class="logo">
+                <h1 class="neon-text">Smart-Time <span>Hub</span></h1>
+            </div>
             <p>El noble arte de dejar las cosas para mañana... ¡Enfréntalo hoy!</p>
-            <button id="googleLoginBtn" class="cta-button google-btn">🚀 Continuar con Google</button>
+            <button id="googleLoginBtn" class="cta-button google-btn">
+                🚀 Continuar con Google
+            </button>
         </div>
     </div>
 
+    <!-- ================= DASHBOARD PRINCIPAL ================= -->
     <div id="mainDashboard" class="dashboard-layout hidden">
+        
+        <!-- MENÚ LATERAL -->
         <aside class="sidebar glass-panel">
-            <div class="logo"><h2 class="neon-text" style="font-size: 1.5rem; margin-bottom: 20px;">Smart-Time</h2></div>
+            <div class="logo">
+                <h2 class="neon-text" style="font-size: 1.5rem; margin-bottom: 20px;">Smart-Time</h2>
+            </div>
             <nav class="nav-menu">
                 <button class="nav-btn active" onclick="App.switchTab('bandeja', this)">📥 Bandeja</button>
                 <button class="nav-btn" onclick="App.switchTab('pizarra', this)">📋 Mi Pizarra</button>
                 <button class="nav-btn" onclick="App.switchTab('historial', this)">📊 Historial</button>
                 <button class="nav-btn" onclick="App.switchTab('ajustes', this)">⚙️ Ajustes</button>
+                
+                <!-- NUEVO: SECCIÓN DE CARPETAS -->
+                <div class="sidebar-divider"></div>
+                <h3 class="sidebar-title">📁 Mis Carpetas</h3>
+                <div id="folderList" class="folder-list">
+                    <!-- Las carpetas se inyectan desde JS -->
+                </div>
+                <button class="nav-btn add-folder-btn" onclick="App.addFolder()">+ Nueva Carpeta</button>
             </nav>
+            
             <div class="sidebar-footer">
                 <button id="themeToggle" class="theme-btn" onclick="App.toggleTheme()">☀️ Modo Claro</button>
                 <button onclick="App.logout()" class="nav-btn" style="margin-top: 10px; color: var(--danger-red);">🚪 Salir</button>
             </div>
         </aside>
 
+        <!-- ÁREA DE CONTENIDO -->
         <main class="main-content">
+            
+            <!-- PESTAÑA 1: BANDEJA -->
             <section id="tab-bandeja" class="tab-content active">
                 <header class="tab-header"><h2>Bandeja de Entrada</h2></header>
                 
@@ -52,17 +78,25 @@
                     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
                 </div>
 
-                <!-- FORMULARIO CORREGIDO (Añadidos aria-label para accesibilidad) -->
+                <!-- FORMULARIO ACTUALIZADO (Con Carpetas y Hábitos) -->
                 <form id="taskForm" class="task-form glass-panel">
                     <div class="input-group full-width">
                         <input type="url" id="urlInput" placeholder="URL (opcional)" aria-label="Añadir URL opcional">
                     </div>
+                    
                     <div style="display: flex; gap: 10px; margin-top: 10px; width: 100%; flex-wrap: wrap;">
                         <input type="text" id="titleInput" placeholder="¿De qué trata?" required style="flex: 2; min-width: 150px;" aria-label="Título de la tarea">
                         
                         <select id="categoryInput" style="flex: 1; min-width: 100px;" aria-label="Categoría de la tarea">
-                            <option value="video">🎥 Video</option><option value="articulo">📝 Artículo</option>
-                            <option value="curso">🎓 Curso</option><option value="proyecto">🚀 Proyecto</option>
+                            <option value="video">🎥 Video</option>
+                            <option value="articulo">📝 Artículo</option>
+                            <option value="curso">🎓 Curso</option>
+                            <option value="proyecto">🚀 Proyecto</option>
+                        </select>
+                        
+                        <!-- NUEVO: SELECTOR DE CARPETA -->
+                        <select id="folderInput" style="flex: 1; min-width: 100px;" aria-label="Elegir Carpeta">
+                            <option value="General">📁 General</option>
                         </select>
                         
                         <select id="energyInput" style="flex: 1; min-width: 100px;" aria-label="Nivel de energía">
@@ -73,9 +107,17 @@
 
                         <input type="number" id="timeInput" placeholder="Min" min="1" required style="flex: 1; min-width: 70px;" aria-label="Minutos necesarios">
                     </div>
+
+                    <!-- NUEVO: CASILLA DE HÁBITO -->
+                    <div class="habit-toggle">
+                        <input type="checkbox" id="habitInput">
+                        <label for="habitInput">🔁 Repetir todos los días (Crear Hábito)</label>
+                    </div>
+
                     <button type="submit" class="cta-button" style="margin-top: 15px;">Guardar Tarea ✨</button>
                 </form>
 
+                <!-- FILTROS MÁGICOS -->
                 <div class="magic-filter glass-panel">
                     <div style="width: 100%;">
                         <label for="timeFilter">⏱️ ¿Cuánto tiempo libre tienes?</label>
@@ -105,8 +147,10 @@
                 <div id="tasksGrid" class="tasks-grid"></div>
             </section>
 
+            <!-- PESTAÑA 2: PIZARRA KANBAN -->
             <section id="tab-pizarra" class="tab-content hidden">
                 <header class="tab-header"><h2>📋 Mi Pizarra</h2></header>
+                
                 <div class="ai-coach-section glass-panel" style="margin-bottom: 20px;">
                     <button id="askAIBtn" class="cta-button ai-btn" onclick="App.askGemini()" style="width:100%; background: linear-gradient(45deg, #a855f7, #ec4899);">
                         ✨ Que la IA organice mi semana
@@ -116,6 +160,7 @@
                         <p id="aiResponseText">Pensando...</p>
                     </div>
                 </div>
+                
                 <div class="kanban-board">
                     <div class="kanban-column glass-panel" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'later')">
                         <h3 class="column-title" style="color: var(--cat-video);">⏳ Algún día</h3>
@@ -132,44 +177,86 @@
                 </div>
             </section>
 
+            <!-- PESTAÑA 3: HISTORIAL & RPG -->
             <section id="tab-historial" class="tab-content hidden">
                 <header class="tab-header">
                     <h2>📊 Tu Progreso</h2>
                     <p class="subtitle">Cada minuto cuenta. Sube de nivel completando tareas.</p>
                 </header>
+
                 <div class="metrics-grid" style="margin-bottom: 20px;">
-                    <div class="metric-card glass-panel"><h4>Nivel Actual</h4><div id="userLevel" class="metric-value">Novato 🌱</div></div>
-                    <div class="metric-card glass-panel"><h4>Tiempo Invertido</h4><div id="totalMinutes" class="metric-value" style="color: var(--accent-blue);">0 min</div></div>
-                    <div class="metric-card glass-panel"><h4>Misiones Superadas</h4><div id="totalCompleted" class="metric-value" style="color: var(--cta-green);">0</div></div>
+                    <div class="metric-card glass-panel">
+                        <h4>Nivel Actual</h4>
+                        <div id="userLevel" class="metric-value">Novato 🌱</div>
+                    </div>
+                    <div class="metric-card glass-panel">
+                        <h4>Tiempo Invertido</h4>
+                        <div id="totalMinutes" class="metric-value" style="color: var(--accent-blue);">0 min</div>
+                    </div>
+                    <div class="metric-card glass-panel">
+                        <h4>Misiones Superadas</h4>
+                        <div id="totalCompleted" class="metric-value" style="color: var(--cta-green);">0</div>
+                    </div>
                 </div>
+
                 <div class="stats-grid">
-                    <div class="chart-container glass-panel"><h3>Distribución de Tareas</h3><div style="height: 250px; margin-top: 10px;"><canvas id="statsChart"></canvas></div></div>
-                    <div class="history-list-container glass-panel"><h3>Registro de Victorias 🏆</h3><div id="historyList" class="history-list"></div></div>
+                    <div class="chart-container glass-panel">
+                        <h3>Distribución de Tareas</h3>
+                        <div style="height: 250px; margin-top: 10px;"><canvas id="statsChart"></canvas></div>
+                    </div>
+                    <div class="history-list-container glass-panel">
+                        <h3>Registro de Victorias 🏆</h3>
+                        <div id="historyList" class="history-list"></div>
+                    </div>
                 </div>
             </section>
 
+            <!-- PESTAÑA 4: AJUSTES -->
             <section id="tab-ajustes" class="tab-content hidden">
                 <header class="tab-header"><h2>⚙️ Ajustes del Sistema</h2></header>
                 <div class="settings-grid">
+                    
                     <div class="settings-card glass-panel profile-card">
                         <div class="profile-header">
                             <img id="userPhoto" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Perfil" class="profile-img">
-                            <div class="profile-info"><h3 id="userName">Cargando...</h3><p id="userEmail">cargando@correo.com</p><span class="badge">Cuenta Sincronizada ☁️</span></div>
+                            <div class="profile-info">
+                                <h3 id="userName">Cargando...</h3>
+                                <p id="userEmail">cargando@correo.com</p>
+                                <span class="badge">Cuenta Sincronizada ☁️</span>
+                            </div>
                         </div>
                     </div>
+
                     <div class="settings-card glass-panel">
-                        <h3>💾 Copia de Seguridad</h3><p>Descarga un archivo JSON con todas tus tareas.</p>
+                        <h3>💾 Copia de Seguridad</h3>
+                        <p>Descarga un archivo JSON con todas tus tareas.</p>
                         <button class="cta-button" onclick="App.exportData()" style="background: var(--accent-blue);">⬇️ Descargar Mis Datos</button>
                     </div>
+
                     <div class="settings-card glass-panel danger-zone">
-                        <h3>⚠️ Zona de Peligro</h3><p>Borra absolutamente todas las tareas y el historial en la nube.</p>
+                        <h3>⚠️ Zona de Peligro</h3>
+                        <p>Borra absolutamente todas las tareas, carpetas y el historial en la nube.</p>
                         <button class="cta-button danger" onclick="App.clearAllData()">🗑️ Formatear Sistema</button>
                     </div>
                 </div>
             </section>
+
+            <!-- PESTAÑA 5: VISTA DE CARPETA ESPECÍFICA (NUEVO) -->
+            <section id="tab-carpetas" class="tab-content hidden">
+                <header class="tab-header">
+                    <h2 id="currentFolderName" class="neon-text">📁 General</h2>
+                    <p class="subtitle" style="color: var(--text-muted); margin-top: 5px;">Todo lo que has guardado en esta categoría.</p>
+                </header>
+                
+                <div id="folderTasksGrid" class="tasks-grid">
+                    <!-- Aquí se inyectan las tareas de la carpeta seleccionada -->
+                </div>
+            </section>
+
         </main>
     </div>
 
+    <!-- ================= MODO FOCUS ================= -->
     <div id="focusOverlay" class="focus-overlay hidden">
         <div class="focus-content glass-panel" style="background: rgba(15, 23, 42, 0.9);">
             <span class="focus-badge">MODO ZEN ACTIVADO 🧘‍♂️</span>
@@ -179,7 +266,9 @@
         </div>
     </div>
 
+    <!-- TOASTS -->
     <div id="toast-container"></div>
+    
     <script type="module" src="app.js"></script>
 </body>
 </html>
