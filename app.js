@@ -275,8 +275,13 @@ const App = (() => {
         }
     };
 
-    // --- GUARDAR LLAVE API ---
-       // --- NUEVO: IA REAL (API DE GROQ / LLAMA 3.1) ---
+    const saveApiKey = () => {
+        const key = document.getElementById('apiKeyInput').value.trim();
+        if(key) { localStorage.setItem('aiApiKey', key); showToast("Llave IA Guardada Correctamente 🧠"); } 
+        else { localStorage.removeItem('aiApiKey'); showToast("Llave IA Eliminada."); }
+    };
+
+    // --- IA REAL (API DE GROQ / LLAMA 3.1) ---
     const askGemini = async () => {
         const apiKey = localStorage.getItem('aiApiKey');
         if (!apiKey) {
@@ -307,7 +312,7 @@ const App = (() => {
                     'Authorization': `Bearer ${apiKey}`
                 },
                 body: JSON.stringify({ 
-                    model: "llama-3.1-8b-instant", // 🔥 AQUÍ ESTÁ EL ARREGLO: Modelo actualizado
+                    model: "llama-3.1-8b-instant",
                     messages: [
                         { role: "system", content: promptSystem },
                         { role: "user", content: promptUser }
@@ -315,16 +320,14 @@ const App = (() => {
                 })
             });
 
-            // 🔥 NUEVO: Si falla, leemos el mensaje exacto de Groq
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error?.message || "Error desconocido del servidor");
+                throw new Error(errorData.error?.message || "Error del servidor. Comprueba tu llave.");
             }
 
             const data = await response.json();
             const aiResponse = data.choices[0].message.content;
             
-            // Efecto máquina de escribir
             aiText.innerHTML = '';
             let i = 0;
             const typeWriter = setInterval(() => {
@@ -334,22 +337,7 @@ const App = (() => {
 
         } catch (error) {
             console.error(error);
-            // Ahora la pantalla mostrará exactamente el motivo del error
             aiText.innerHTML = `<span style="color:var(--danger-red)">Error: ${error.message}</span>`;
-        }
-    };
-            
-            // Efecto máquina de escribir
-            aiText.innerHTML = '';
-            let i = 0;
-            const typeWriter = setInterval(() => {
-                if(i < aiResponse.length) { aiText.innerHTML += aiResponse.charAt(i); i++; } 
-                else { clearInterval(typeWriter); }
-            }, 25); 
-
-        } catch (error) {
-            console.error(error);
-            aiText.innerHTML = `<span style="color:var(--danger-red)">Error de IA: Comprueba que tu Llave API sea correcta.</span>`;
         }
     };
 
