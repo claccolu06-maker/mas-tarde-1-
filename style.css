@@ -133,3 +133,11 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 10
     .main-content { padding: 1rem; overflow-y: visible; }
     .kanban-board, .stats-grid { flex-direction: column; grid-template-columns: 1fr; }
 }
+/* --- FILTROS DE ENERGÍA --- */
+.energy-filters { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+.btn-energy { 
+    background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); 
+    padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: 0.3s; 
+}
+.btn-energy:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
+.btn-energy.active { background: rgba(56, 189, 248, 0.2); border-color: var(--accent-blue); font-weight: bold; }
