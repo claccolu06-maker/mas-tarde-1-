@@ -276,18 +276,7 @@ const App = (() => {
     };
 
     // --- GUARDAR LLAVE API ---
-    const saveApiKey = () => {
-        const key = document.getElementById('apiKeyInput').value.trim();
-        if(key) {
-            localStorage.setItem('aiApiKey', key);
-            showToast("Llave IA Guardada Correctamente 🧠");
-        } else {
-            localStorage.removeItem('aiApiKey');
-            showToast("Llave IA Eliminada.");
-        }
-    };
-
-    // --- NUEVO: IA REAL (API DE GROQ / LLAMA 3) ---
+       // --- NUEVO: IA REAL (API DE GROQ / LLAMA 3.1) ---
     const askGemini = async () => {
         const apiKey = localStorage.getItem('aiApiKey');
         if (!apiKey) {
@@ -318,7 +307,7 @@ const App = (() => {
                     'Authorization': `Bearer ${apiKey}`
                 },
                 body: JSON.stringify({ 
-                    model: "llama3-8b-8192", // Modelo de Llama 3 súper rápido y gratis
+                    model: "llama-3.1-8b-instant", // 🔥 AQUÍ ESTÁ EL ARREGLO: Modelo actualizado
                     messages: [
                         { role: "system", content: promptSystem },
                         { role: "user", content: promptUser }
@@ -326,10 +315,29 @@ const App = (() => {
                 })
             });
 
-            if (!response.ok) throw new Error("Llave inválida o API caída.");
+            // 🔥 NUEVO: Si falla, leemos el mensaje exacto de Groq
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || "Error desconocido del servidor");
+            }
 
             const data = await response.json();
             const aiResponse = data.choices[0].message.content;
+            
+            // Efecto máquina de escribir
+            aiText.innerHTML = '';
+            let i = 0;
+            const typeWriter = setInterval(() => {
+                if(i < aiResponse.length) { aiText.innerHTML += aiResponse.charAt(i); i++; } 
+                else { clearInterval(typeWriter); }
+            }, 25); 
+
+        } catch (error) {
+            console.error(error);
+            // Ahora la pantalla mostrará exactamente el motivo del error
+            aiText.innerHTML = `<span style="color:var(--danger-red)">Error: ${error.message}</span>`;
+        }
+    };
             
             // Efecto máquina de escribir
             aiText.innerHTML = '';
