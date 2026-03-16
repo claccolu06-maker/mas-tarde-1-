@@ -21,7 +21,7 @@ let currentUser = null;
 
 const App = (() => {
     let tasks = [];
-    let folders = ['General', 'Economía 📈', 'Deporte 💪']; // Carpetas por defecto
+    let folders = ['General', 'Economía 📈', 'Deporte 💪']; 
     let currentActiveFolder = 'General';
     let focusInterval;
     let myChart = null;
@@ -57,7 +57,6 @@ const App = (() => {
         saveFolders: () => { if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/folders'), folders); },
         listen: () => {
             if(currentUser) {
-                // Escuchar Tareas
                 onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => {
                     const data = snapshot.val();
                     if (!data) tasks = [];
@@ -65,12 +64,9 @@ const App = (() => {
                     else tasks = Object.values(data).filter(t => t !== null);
                     checkDailyHabits(); UI.render(); 
                 });
-                // Escuchar Carpetas
                 onValue(ref(db, 'users/' + currentUser.uid + '/folders'), (snapshot) => {
                     const data = snapshot.val();
-                    if (data) {
-                        folders = Array.isArray(data) ? data : Object.values(data);
-                    }
+                    if (data) folders = Array.isArray(data) ? data : Object.values(data);
                     UI.renderFolders();
                 });
             }
@@ -86,17 +82,40 @@ const App = (() => {
         if(tab === 'historial') setTimeout(UI.renderChart, 100); 
     };
 
-    // --- NUEVO: LÓGICA DE CARPETAS ---
+    // --- CARPETAS ---
     const addFolder = () => {
         const name = prompt("Nombre de la nueva carpeta (ej: Universidad 🎓):");
         if(name && name.trim() !== "") {
             if(!folders.includes(name.trim())) {
-                folders.push(name.trim());
-                Storage.saveFolders();
-                showToast("Carpeta creada 📁");
-            } else {
-                alert("Esa carpeta ya existe.");
+                folders.push(name.trim()); Storage.saveFolders(); showToast("Carpeta creada 📁");
+            } else alert("Esa carpeta ya existe.");
+        }
+    };
+
+    // --- NUEVO: FUNCIÓN PARA BORRAR CARPETAS ---
+    const deleteFolder = (folderName) => {
+        if(folderName === 'General') return; // No se puede borrar General
+        
+        if(confirm(`⚠️ ¿Seguro que quieres borrar la carpeta "${folderName}"?\n\n(Tranquilo, las tareas que haya dentro no se borrarán, se moverán a la carpeta 'General').`)) {
+            // Mover las tareas a General
+            let needsTaskSave = false;
+            tasks.forEach(t => {
+                if(t.folder === folderName) { t.folder = 'General'; needsTaskSave = true; }
+            });
+            if(needsTaskSave) Storage.saveTasks();
+
+            // Borrar la carpeta del array
+            folders = folders.filter(f => f !== folderName);
+            Storage.saveFolders();
+            
+            // Si el usuario estaba viendo esa carpeta, lo sacamos de ahí
+            if(currentActiveFolder === folderName) {
+                currentActiveFolder = 'General';
+                document.getElementById('currentFolderName').textContent = `📁 General`;
+                switchTab('bandeja', document.querySelector('.nav-btn')); // Mandar a bandeja
             }
+            showToast("Carpeta eliminada 🗑️");
+            UI.renderFolders(); UI.render();
         }
     };
 
@@ -104,14 +123,13 @@ const App = (() => {
         currentActiveFolder = name;
         document.getElementById('currentFolderName').textContent = `📁 ${name}`;
         switchTab('carpetas', btn);
-        UI.render(); // Recargar para filtrar
+        UI.render(); 
     };
 
     const setEnergyFilter = (level, btn) => {
         currentEnergyFilter = level;
         document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-        UI.render();
+        if(btn) btn.classList.add('active'); UI.render();
     };
 
     const checkSharedLinks = () => {
@@ -141,18 +159,12 @@ const App = (() => {
         const folderVal = document.getElementById('folderInput') ? document.getElementById('folderInput').value : 'General';
         
         tasks.unshift({
-            id: Date.now().toString(), 
-            url: document.getElementById('urlInput').value,
-            title: document.getElementById('titleInput').value, 
-            category: document.getElementById('categoryInput').value,
-            energy: energyVal,
-            folder: folderVal, // Guardamos la carpeta
-            time: parseInt(document.getElementById('timeInput').value), 
-            isHabit: isHabitChecked,
-            streak: 0, lastCompletedDate: null, completed: false, status: 'bandeja'
+            id: Date.now().toString(), url: document.getElementById('urlInput').value,
+            title: document.getElementById('titleInput').value, category: document.getElementById('categoryInput').value,
+            energy: energyVal, folder: folderVal, time: parseInt(document.getElementById('timeInput').value), 
+            isHabit: isHabitChecked, streak: 0, lastCompletedDate: null, completed: false, status: 'bandeja'
         });
-        Storage.saveTasks(); document.getElementById('taskForm').reset(); 
-        document.getElementById('folderInput').value = folderVal; // Mantener la última carpeta seleccionada
+        Storage.saveTasks(); document.getElementById('taskForm').reset(); document.getElementById('folderInput').value = folderVal; 
         showToast(isHabitChecked ? "Hábito creado. 🔁" : "Guardado en " + folderVal + " 📁");
     };
 
@@ -184,8 +196,7 @@ const App = (() => {
 
     const startFocus = (id) => {
         const task = tasks.find(t => t.id === id); if(!task) return;
-        document.getElementById('focusTitle').textContent = task.title || "Enfoque";
-        document.getElementById('focusOverlay').classList.remove('hidden');
+        document.getElementById('focusTitle').textContent = task.title || "Enfoque"; document.getElementById('focusOverlay').classList.remove('hidden');
         const endTime = Date.now() + ((task.time || 25) * 60 * 1000);
         const updateTimer = () => {
             const remaining = Math.round((endTime - Date.now()) / 1000);
@@ -202,10 +213,27 @@ const App = (() => {
             if(list) {
                 list.innerHTML = '';
                 folders.forEach(f => {
-                    const btn = document.createElement('button'); btn.className = 'nav-btn';
+                    // Contenedor para el botón de la carpeta y el de borrar
+                    const folderItem = document.createElement('div');
+                    folderItem.className = 'folder-item';
+
+                    // Botón para entrar a la carpeta
+                    const btn = document.createElement('button');
+                    btn.className = 'nav-btn';
                     btn.innerHTML = `📁 ${f}`;
                     btn.onclick = function() { App.openFolder(f, this); };
-                    list.appendChild(btn);
+                    folderItem.appendChild(btn);
+
+                    // Botón de borrar (solo si no es General)
+                    if(f !== 'General') {
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'delete-folder-btn';
+                        delBtn.innerHTML = '✖';
+                        delBtn.title = 'Eliminar carpeta';
+                        delBtn.onclick = (e) => { e.stopPropagation(); App.deleteFolder(f); };
+                        folderItem.appendChild(delBtn);
+                    }
+                    list.appendChild(folderItem);
                 });
             }
             if(select) { select.innerHTML = ''; folders.forEach(f => { select.innerHTML += `<option value="${f}">${f}</option>`; }); }
@@ -275,17 +303,14 @@ const App = (() => {
                     return;
                 }
 
-                // Render en el panel normal (Bandeja / Kanban)
                 const card = createCardDOM(task);
                 if (task.status === 'bandeja') { if(g.bandeja) g.bandeja.appendChild(card); enBandeja++; }
                 else if (task.status === 'later') { if(g.later) g.later.appendChild(card); }
                 else if (task.status === 'week') { if(g.week) g.week.appendChild(card); }
                 else if (task.status === 'today') { if(g.today) g.today.appendChild(card); }
 
-                // Render extra en la pestaña de Carpeta Activa
                 if (task.folder === currentActiveFolder || (!task.folder && currentActiveFolder === 'General')) {
-                    const folderCard = createCardDOM(task);
-                    if(g.folder) g.folder.appendChild(folderCard);
+                    const folderCard = createCardDOM(task); if(g.folder) g.folder.appendChild(folderCard);
                 }
             });
             if(document.getElementById('emptyState')) document.getElementById('emptyState').classList.toggle('hidden', enBandeja > 0);
@@ -327,7 +352,7 @@ const App = (() => {
         });
     };
 
-    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder };
+    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder, deleteFolder };
 })();
 
 window.App = App;
