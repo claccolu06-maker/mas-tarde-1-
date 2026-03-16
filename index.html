@@ -241,6 +241,15 @@
                 </div>
             </section>
 
+                                <!-- NUEVO: CONFIGURACIÓN IA (GROQ) -->
+                    <div class="settings-card glass-panel" style="border-color: #a855f7;">
+                        <h3 style="color: #a855f7;">🧠 Cerebro IA (Groq / Llama 3)</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">Tu coach personal súper rápido. Tu llave se guarda localmente por seguridad.</p>
+                        <input type="password" id="apiKeyInput" placeholder="Pega tu API Key de Groq aquí..." style="margin-bottom: 10px; border-color: #a855f7;">
+                        <button class="cta-button" onclick="App.saveApiKey()" style="width: 100%; background: linear-gradient(45deg, #a855f7, #ec4899);">💾 Guardar Llave API</button>
+                        <a href="https://console.groq.com/keys" target="_blank" style="display: block; margin-top: 10px; font-size: 0.8rem; color: var(--accent-blue); text-align: center;">Consigue tu Llave 100% GRATIS aquí</a>
+                    </div>
+            
             <!-- PESTAÑA 5: VISTA DE CARPETA ESPECÍFICA (NUEVO) -->
             <section id="tab-carpetas" class="tab-content hidden">
                 <header class="tab-header">
