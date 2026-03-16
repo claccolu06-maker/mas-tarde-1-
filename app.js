@@ -3,7 +3,7 @@ import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signO
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 // ==========================================
-// 🚨 LLAVES DE FIREBASE (Tus datos oficiales)
+// 🚨 LLAVES DE FIREBASE 
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyCz45FGoqkYt9BS4J1_UjkBu6gSTHp0QOU",
@@ -27,7 +27,7 @@ const App = (() => {
     let focusInterval;
     let myChart = null;
     let draggedTaskId = null; 
-    let currentEnergyFilter = 'all'; // Rastrea el filtro de energía actual
+    let currentEnergyFilter = 'all'; // Rastreador de Energía
 
     // --- SISTEMA DE TOASTS ---
     const showToast = (msg) => {
@@ -38,9 +38,7 @@ const App = (() => {
         c.appendChild(t); setTimeout(() => t.remove(), 4000);
     };
 
-    // ==========================================
-    // 🛡️ ESCUDO 1: REPARADOR DE DATOS DE FIREBASE
-    // ==========================================
+    // --- CONEXIÓN NUBE FIREBASE (ESCUDO ANTI-BUGS) ---
     const Storage = {
         save: () => { 
             if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/tasks'), tasks); 
@@ -49,49 +47,53 @@ const App = (() => {
             if(currentUser) {
                 onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => {
                     const data = snapshot.val();
-                    
-                    // Si no hay datos, array vacío.
-                    if (!data) {
-                        tasks = [];
-                    } 
-                    // Si Firebase devolvió un Array correcto...
-                    else if (Array.isArray(data)) {
-                        tasks = data.filter(t => t !== null); // Filtramos nulos por si acaso
-                    } 
-                    // Si Firebase corrompió los datos y los volvió un Objeto...
-                    else {
-                        tasks = Object.values(data).filter(t => t !== null);
-                    }
-                    
+                    if (!data) tasks = [];
+                    else if (Array.isArray(data)) tasks = data.filter(t => t !== null);
+                    else tasks = Object.values(data).filter(t => t !== null);
                     UI.render(); 
                 });
             }
         }
     };
 
-    // ==========================================
-    // 🛡️ ESCUDO 2: NAVEGACIÓN A PRUEBA DE FALLOS
-    // ==========================================
+    // --- NAVEGACIÓN Y FILTROS ---
     const switchTab = (tab, btn) => {
-        // Apagamos TODO a la fuerza bruta
         document.querySelectorAll('.tab-content').forEach(t => {
-            t.classList.remove('active');
-            t.classList.remove('hidden');
-            t.style.display = 'none'; // CSS Inline manda sobre todo
+            t.classList.remove('active', 'hidden');
+            t.style.display = 'none'; 
         });
         
-        // Encendemos solo lo que queremos
         const targetTab = document.getElementById(`tab-${tab}`);
         if(targetTab) {
             targetTab.classList.add('active');
-            targetTab.style.display = 'block'; // Fuerza visual
+            targetTab.style.display = 'block'; 
         }
 
-        // Estilos del menú
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
         
-        if(tab === 'historial') setTimeout(UI.renderChart, 100); // Pequeño delay para que el Canvas exista antes de pintar
+        if(tab === 'historial') setTimeout(UI.renderChart, 100); 
+    };
+
+    const setEnergyFilter = (level, btn) => {
+        currentEnergyFilter = level;
+        document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        UI.render();
+    };
+
+    // --- RECEPCIÓN DE ENLACES MÓVILES (PWA) ---
+    const checkSharedLinks = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedTitle = urlParams.get('title') || urlParams.get('text');
+        const sharedUrl = urlParams.get('url');
+
+        if (sharedTitle || sharedUrl) {
+            if (document.getElementById('titleInput')) document.getElementById('titleInput').value = sharedTitle || '';
+            if (document.getElementById('urlInput')) document.getElementById('urlInput').value = sharedUrl || '';
+            window.history.replaceState({}, document.title, window.location.pathname);
+            showToast("🔗 ¡Enlace recibido desde el móvil!");
+        }
     };
 
     // --- DRAG & DROP ---
@@ -107,21 +109,25 @@ const App = (() => {
     // --- LÓGICA CRUD ---
     const addTask = (e) => {
         e.preventDefault();
-               tasks.unshift({
+        const energyVal = document.getElementById('energyInput') ? document.getElementById('energyInput').value : 'media';
+        
+        tasks.unshift({
             id: Date.now().toString(), 
             url: document.getElementById('urlInput').value,
             title: document.getElementById('titleInput').value, 
             category: document.getElementById('categoryInput').value,
-            energy: document.getElementById('energyInput').value, // <--- NUEVO
+            energy: energyVal,
             time: parseInt(document.getElementById('timeInput').value), 
             completed: false, status: 'bandeja'
         });
+        Storage.save(); document.getElementById('taskForm').reset(); showToast("Añadida. ¡A trabajar! 👀");
+    };
 
     const editTask = (id) => {
         const task = tasks.find(t => t.id === id); if (!task) return;
-        const newTitle = prompt("Corrige el nombre de la tarea:", task.title); if (!newTitle || newTitle.trim() === "") return;
-        const newTime = prompt("Cambia el tiempo estimado (minutos):", task.time); if (!newTime || isNaN(newTime) || newTime <= 0) return;
-        task.title = newTitle.trim(); task.time = parseInt(newTime); Storage.save(); showToast("Tarea actualizada. ✏️");
+        const newTitle = prompt("Corrige el nombre:", task.title); if (!newTitle || newTitle.trim() === "") return;
+        const newTime = prompt("Cambia el tiempo (minutos):", task.time); if (!newTime || isNaN(newTime) || newTime <= 0) return;
+        task.title = newTitle.trim(); task.time = parseInt(newTime); Storage.save(); showToast("Actualizada. ✏️");
     };
 
     const toggleComplete = (id) => { 
@@ -156,9 +162,7 @@ const App = (() => {
     };
     const stopFocus = () => { clearInterval(focusInterval); document.getElementById('focusOverlay').classList.add('hidden'); };
 
-    // ==========================================
-    // 🛡️ ESCUDO 3: RENDERIZADO INMUNE A ERRORES
-    // ==========================================
+    // --- RENDERIZADO VISUAL ---
     const UI = {
         updateStats: () => {
             if(tasks.length === 0) return;
@@ -179,28 +183,20 @@ const App = (() => {
         },
         render: () => {
             const g = { bandeja: document.getElementById('tasksGrid'), later: document.getElementById('column-later'), week: document.getElementById('column-week'), today: document.getElementById('column-today'), history: document.getElementById('historyList') };
-            Object.values(g).forEach(el => { if(el) el.innerHTML = ''; }); // Vaciamos todo
+            Object.values(g).forEach(el => { if(el) el.innerHTML = ''; }); 
             let enBandeja = 0;
 
-                      tasks.forEach(task => {
+            tasks.forEach(task => {
                 const s_title = task.title || "Tarea sin nombre";
                 const s_time = task.time || 15;
                 const s_cat = task.category || "proyecto";
                 const s_status = task.status || "bandeja";
-                const s_energy = task.energy || "media"; // <--- Energía por defecto
+                const s_energy = task.energy || "media";
                 
-                // --- LÓGICA DE FILTRO DE ENERGÍA ---
-                if (currentEnergyFilter !== 'all' && s_energy !== currentEnergyFilter) {
-                    return; // Si no coincide con tu energía, la ocultamos de la pantalla
+                // Lógica del Filtro de Energía
+                if (currentEnergyFilter !== 'all' && s_energy !== currentEnergyFilter && !task.completed) {
+                    return; // Ignora esta tarea si no coincide con el filtro de energía
                 }
-                
-                // Icono de energía para la tarjeta
-                let energyIcon = "🔋";
-                if(s_energy === "alta") energyIcon = "⚡";
-                if(s_energy === "baja") energyIcon = "🪫";
-
-                if (task.completed) {
-                   // ... (el resto de tu código sigue igual)
 
                 if (task.completed) {
                     if(g.history) g.history.innerHTML += `
@@ -214,12 +210,15 @@ const App = (() => {
                     return;
                 }
 
+                let energyIcon = "🔋";
+                if(s_energy === "alta") energyIcon = "⚡";
+                if(s_energy === "baja") energyIcon = "🪫";
+
                 const card = document.createElement('div'); card.className = `kanban-card`;
                 card.draggable = true; card.ondragstart = (e) => App.dragStart(e, task.id); card.ondragend = (e) => e.target.classList.remove('dragging');
 
                 card.innerHTML = `
                     <div style="font-size:0.8rem; margin-bottom: 5px; font-weight:bold;" class="pill ${s_cat}">${s_cat.toUpperCase()} | ⏱ ${s_time}m | ${energyIcon}</div>
-                    <div style="font-size:0.8rem; margin-bottom: 5px; font-weight:bold;" class="pill ${s_cat}">${s_cat.toUpperCase()} | ⏱ ${s_time}m</div>
                     <h4 style="margin: 0; font-size: 1rem;">${s_title}</h4>
                     <select style="margin:10px 0; width:100%; padding:5px; border-radius:5px; background:var(--input-bg); color:var(--text-main)" onchange="App.moveTask('${task.id}', this.value)">
                         <option value="bandeja" ${s_status === 'bandeja'?'selected':''}>📥 Bandeja</option><option value="later" ${s_status === 'later'?'selected':''}>⏳ Algún día</option><option value="week" ${s_status === 'week'?'selected':''}>📅 Esta Semana</option><option value="today" ${s_status === 'today'?'selected':''}>🔥 Hacer HOY</option>
@@ -271,50 +270,35 @@ const App = (() => {
         a.download = "backup.json"; document.body.appendChild(a); a.click(); a.remove();
     };
 
-    // ==========================================
-    // 🛡️ ESCUDO 4: TRAMPA DE LOGIN (ALERTA FORZADA)
-    // ==========================================
+    // --- AUTENTICACIÓN GOOGLE (Protegida contra Múltiples Clics) ---
+    let isLoggingIn = false;
     const login = async () => {
+        if(isLoggingIn) return; // Si ya está cargando, no hacer nada si clicas de nuevo
+        isLoggingIn = true;
         try {
             await signInWithPopup(auth, provider);
         } catch (error) {
             console.error(error);
-            alert("⚠️ BLOQUEO DE GOOGLE DETECTADO ⚠️\n\nCódigo: " + error.code + "\n\n1. Si estás en INCÓGNITO, las cookies están bloqueadas. Usa una pestaña normal.\n2. Revisa que no tengas bloqueadores de Pop-Ups.");
+            if(error.code === 'auth/popup-blocked') {
+                alert("⚠️ NAVEGADOR BLOQUEANDO: Tu navegador bloqueó la ventana de Google. Mira arriba a la derecha en la barra de direcciones y permite las ventanas emergentes para este sitio.");
+            } else if (error.code !== 'auth/cancelled-popup-request') {
+                alert("Error: " + error.message);
+            }
+        } finally {
+            isLoggingIn = false;
         }
     };
+    
     const logout = () => signOut(auth).then(() => { tasks = []; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
 
-          // --- GESTIÓN DE ENERGÍA ---
-    const setEnergyFilter = (level, btn) => {
-        currentEnergyFilter = level;
-        document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        UI.render();
-    };
-
-    // --- RECEPTOR DE ENLACES DEL CELULAR (WEB SHARE API) ---
-    const checkSharedLinks = () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const sharedTitle = urlParams.get('title') || urlParams.get('text');
-        const sharedUrl = urlParams.get('url');
-
-        if (sharedTitle || sharedUrl) {
-            // Auto-llenar el formulario
-            if (document.getElementById('titleInput')) document.getElementById('titleInput').value = sharedTitle || '';
-            if (document.getElementById('urlInput')) document.getElementById('urlInput').value = sharedUrl || '';
-            
-            // Limpiar la barra de direcciones para que no se vuelva a cargar al actualizar
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            showToast("🔗 ¡Enlace recibido desde el radar móvil!");
-        }
-    };
     // --- INICIALIZADOR ---
     const init = () => {
         if(document.getElementById('taskForm')) document.getElementById('taskForm').addEventListener('submit', addTask);
         if(document.getElementById('exitFocus')) document.getElementById('exitFocus').addEventListener('click', stopFocus);
         if(document.getElementById('googleLoginBtn')) document.getElementById('googleLoginBtn').addEventListener('click', login);
         
+        checkSharedLinks(); // Revisar si enviaron un enlace desde el móvil
+
         onAuthStateChanged(auth, (user) => {
             if (user) { 
                 currentUser = user; 
@@ -325,10 +309,7 @@ const App = (() => {
                 }
                 document.getElementById('loginScreen').classList.add('hidden'); 
                 document.getElementById('mainDashboard').classList.remove('hidden'); 
-                
-                // Forzamos visualización de la primera pestaña
                 switchTab('bandeja', document.querySelector('.nav-btn.active'));
-
                 Storage.listen(); 
             } else { 
                 currentUser = null; 
@@ -338,7 +319,7 @@ const App = (() => {
         });
     };
 
-    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop };
+    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop };
 })();
 
 window.App = App;
