@@ -82,60 +82,36 @@ const App = (() => {
         if(tab === 'historial') setTimeout(UI.renderChart, 100); 
     };
 
-    // --- CARPETAS ---
     const addFolder = () => {
         const name = prompt("Nombre de la nueva carpeta (ej: Universidad 🎓):");
         if(name && name.trim() !== "") {
-            if(!folders.includes(name.trim())) {
-                folders.push(name.trim()); Storage.saveFolders(); showToast("Carpeta creada 📁");
-            } else alert("Esa carpeta ya existe.");
+            if(!folders.includes(name.trim())) { folders.push(name.trim()); Storage.saveFolders(); showToast("Carpeta creada 📁"); } 
+            else alert("Esa carpeta ya existe.");
         }
     };
 
-    // --- NUEVO: FUNCIÓN PARA BORRAR CARPETAS ---
     const deleteFolder = (folderName) => {
-        if(folderName === 'General') return; // No se puede borrar General
-        
-        if(confirm(`⚠️ ¿Seguro que quieres borrar la carpeta "${folderName}"?\n\n(Tranquilo, las tareas que haya dentro no se borrarán, se moverán a la carpeta 'General').`)) {
-            // Mover las tareas a General
+        if(folderName === 'General') return; 
+        if(confirm(`⚠️ ¿Seguro que quieres borrar la carpeta "${folderName}"?\n(Las tareas se moverán a 'General').`)) {
             let needsTaskSave = false;
-            tasks.forEach(t => {
-                if(t.folder === folderName) { t.folder = 'General'; needsTaskSave = true; }
-            });
+            tasks.forEach(t => { if(t.folder === folderName) { t.folder = 'General'; needsTaskSave = true; } });
             if(needsTaskSave) Storage.saveTasks();
-
-            // Borrar la carpeta del array
-            folders = folders.filter(f => f !== folderName);
-            Storage.saveFolders();
-            
-            // Si el usuario estaba viendo esa carpeta, lo sacamos de ahí
+            folders = folders.filter(f => f !== folderName); Storage.saveFolders();
             if(currentActiveFolder === folderName) {
-                currentActiveFolder = 'General';
-                document.getElementById('currentFolderName').textContent = `📁 General`;
-                switchTab('bandeja', document.querySelector('.nav-btn')); // Mandar a bandeja
+                currentActiveFolder = 'General'; document.getElementById('currentFolderName').textContent = `📁 General`;
+                switchTab('bandeja', document.querySelector('.nav-btn'));
             }
-            showToast("Carpeta eliminada 🗑️");
-            UI.renderFolders(); UI.render();
+            showToast("Carpeta eliminada 🗑️"); UI.renderFolders(); UI.render();
         }
     };
 
-    const openFolder = (name, btn) => {
-        currentActiveFolder = name;
-        document.getElementById('currentFolderName').textContent = `📁 ${name}`;
-        switchTab('carpetas', btn);
-        UI.render(); 
-    };
+    const openFolder = (name, btn) => { currentActiveFolder = name; document.getElementById('currentFolderName').textContent = `📁 ${name}`; switchTab('carpetas', btn); UI.render(); };
 
-    const setEnergyFilter = (level, btn) => {
-        currentEnergyFilter = level;
-        document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active'); UI.render();
-    };
+    const setEnergyFilter = (level, btn) => { currentEnergyFilter = level; document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); UI.render(); };
 
     const checkSharedLinks = () => {
         const urlParams = new URLSearchParams(window.location.search);
-        const sharedTitle = urlParams.get('title') || urlParams.get('text');
-        const sharedUrl = urlParams.get('url');
+        const sharedTitle = urlParams.get('title') || urlParams.get('text'); const sharedUrl = urlParams.get('url');
         if (sharedTitle || sharedUrl) {
             if (document.getElementById('titleInput')) document.getElementById('titleInput').value = sharedTitle || '';
             if (document.getElementById('urlInput')) document.getElementById('urlInput').value = sharedUrl || '';
@@ -159,9 +135,8 @@ const App = (() => {
         const folderVal = document.getElementById('folderInput') ? document.getElementById('folderInput').value : 'General';
         
         tasks.unshift({
-            id: Date.now().toString(), url: document.getElementById('urlInput').value,
-            title: document.getElementById('titleInput').value, category: document.getElementById('categoryInput').value,
-            energy: energyVal, folder: folderVal, time: parseInt(document.getElementById('timeInput').value), 
+            id: Date.now().toString(), url: document.getElementById('urlInput').value, title: document.getElementById('titleInput').value, 
+            category: document.getElementById('categoryInput').value, energy: energyVal, folder: folderVal, time: parseInt(document.getElementById('timeInput').value), 
             isHabit: isHabitChecked, streak: 0, lastCompletedDate: null, completed: false, status: 'bandeja'
         });
         Storage.saveTasks(); document.getElementById('taskForm').reset(); document.getElementById('folderInput').value = folderVal; 
@@ -180,10 +155,7 @@ const App = (() => {
         if(t) { 
             t.completed = !t.completed; 
             if(t.completed) {
-                if(t.isHabit) {
-                    const today = getLocalDate(0);
-                    if(t.lastCompletedDate !== today) { t.streak = (t.streak || 0) + 1; t.lastCompletedDate = today; }
-                }
+                if(t.isHabit) { const today = getLocalDate(0); if(t.lastCompletedDate !== today) { t.streak = (t.streak || 0) + 1; t.lastCompletedDate = today; } }
                 showToast("¡Completada! 🎉");
                 if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#38bdf8', '#a855f7', '#10b981', '#f59e0b'] });
             } else { if(t.isHabit) { t.streak = Math.max(0, (t.streak || 0) - 1); t.lastCompletedDate = null; } }
@@ -213,25 +185,10 @@ const App = (() => {
             if(list) {
                 list.innerHTML = '';
                 folders.forEach(f => {
-                    // Contenedor para el botón de la carpeta y el de borrar
-                    const folderItem = document.createElement('div');
-                    folderItem.className = 'folder-item';
-
-                    // Botón para entrar a la carpeta
-                    const btn = document.createElement('button');
-                    btn.className = 'nav-btn';
-                    btn.innerHTML = `📁 ${f}`;
-                    btn.onclick = function() { App.openFolder(f, this); };
-                    folderItem.appendChild(btn);
-
-                    // Botón de borrar (solo si no es General)
+                    const folderItem = document.createElement('div'); folderItem.className = 'folder-item';
+                    const btn = document.createElement('button'); btn.className = 'nav-btn'; btn.innerHTML = `📁 ${f}`; btn.onclick = function() { App.openFolder(f, this); }; folderItem.appendChild(btn);
                     if(f !== 'General') {
-                        const delBtn = document.createElement('button');
-                        delBtn.className = 'delete-folder-btn';
-                        delBtn.innerHTML = '✖';
-                        delBtn.title = 'Eliminar carpeta';
-                        delBtn.onclick = (e) => { e.stopPropagation(); App.deleteFolder(f); };
-                        folderItem.appendChild(delBtn);
+                        const delBtn = document.createElement('button'); delBtn.className = 'delete-folder-btn'; delBtn.innerHTML = '✖'; delBtn.onclick = (e) => { e.stopPropagation(); App.deleteFolder(f); }; folderItem.appendChild(delBtn);
                     }
                     list.appendChild(folderItem);
                 });
@@ -315,20 +272,83 @@ const App = (() => {
             });
             if(document.getElementById('emptyState')) document.getElementById('emptyState').classList.toggle('hidden', enBandeja > 0);
             UI.updateStats();
-        },
-        renderChart: () => {
-            const ctx = document.getElementById('statsChart'); if(!ctx) return;
-            const comp = tasks.filter(t => t.completed); if(myChart) myChart.destroy();
-            const counts = ['video', 'articulo', 'curso', 'proyecto'].map(c => comp.filter(t => (t.category || 'proyecto') === c).length);
-            const fontColor = document.documentElement.getAttribute('data-theme') === 'dark' ? 'white' : 'black';
-            myChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['Videos', 'Artículos', 'Cursos', 'Proyectos'], datasets: [{ data: counts, backgroundColor: ['#a855f7', '#38bdf8', '#10b981', '#f59e0b'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: fontColor } } } }});
         }
     };
 
-    const askGemini = async () => { /* ... IA Sarcástica ... */ };
-    const toggleTheme = () => { /* ... */ };
+    // --- GUARDAR LLAVE API ---
+    const saveApiKey = () => {
+        const key = document.getElementById('apiKeyInput').value.trim();
+        if(key) {
+            localStorage.setItem('aiApiKey', key);
+            showToast("Llave IA Guardada Correctamente 🧠");
+        } else {
+            localStorage.removeItem('aiApiKey');
+            showToast("Llave IA Eliminada.");
+        }
+    };
+
+    // --- NUEVO: IA REAL (API DE GROQ / LLAMA 3) ---
+    const askGemini = async () => {
+        const apiKey = localStorage.getItem('aiApiKey');
+        if (!apiKey) {
+            alert("⚠️ IA DESCONECTADA: Necesitas poner tu Llave API gratuita en la pestaña de 'Ajustes' primero.");
+            switchTab('ajustes', document.querySelectorAll('.nav-btn')[3]); 
+            return;
+        }
+
+        const aiCard = document.getElementById('aiResponseCard'); 
+        const aiText = document.getElementById('aiResponseText');
+        const pendingTasks = tasks.filter(t => !t.completed);
+        
+        if(pendingTasks.length === 0) { showToast("Tu pizarra está vacía. No hay nada que analizar. 🤖"); return; }
+        
+        aiCard.classList.remove('hidden'); 
+        aiText.innerHTML = '<i>Analizando tu nivel de procrastinación a la velocidad de la luz... ⚡</i>';
+
+        const tasksString = pendingTasks.map(t => `- [${t.status.toUpperCase()}] ${t.title} (${t.time}m, Energía: ${t.energy})`).join('\n');
+        
+        const promptSystem = `Eres un coach de productividad sarcástico, crudo y divertido. Tu misión es evitar que el usuario procrastine. Reglas: 1. Elige SOLO 1 tarea que deba hacer AHORA MISMO y dile por qué (basándote en su tiempo o energía). 2. Ríete un poco de él por dejar cosas para "algún día". 3. Sé súper breve (máximo 3 frases cortas). Empieza a dar caña directamente, sin decir Hola.`;
+        const promptUser = `Mi energía actual es: ${currentEnergyFilter === 'all' ? 'Variada' : currentEnergyFilter}. Estas son mis tareas pendientes:\n${tasksString}`;
+
+        try {
+            const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({ 
+                    model: "llama3-8b-8192", // Modelo de Llama 3 súper rápido y gratis
+                    messages: [
+                        { role: "system", content: promptSystem },
+                        { role: "user", content: promptUser }
+                    ]
+                })
+            });
+
+            if (!response.ok) throw new Error("Llave inválida o API caída.");
+
+            const data = await response.json();
+            const aiResponse = data.choices[0].message.content;
+            
+            // Efecto máquina de escribir
+            aiText.innerHTML = '';
+            let i = 0;
+            const typeWriter = setInterval(() => {
+                if(i < aiResponse.length) { aiText.innerHTML += aiResponse.charAt(i); i++; } 
+                else { clearInterval(typeWriter); }
+            }, 25); 
+
+        } catch (error) {
+            console.error(error);
+            aiText.innerHTML = `<span style="color:var(--danger-red)">Error de IA: Comprueba que tu Llave API sea correcta.</span>`;
+        }
+    };
+
+    const toggleTheme = () => { const html = document.documentElement; const btn = document.getElementById('themeToggle'); if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); btn.textContent = '🌙 Modo Oscuro'; } else { html.setAttribute('data-theme', 'dark'); btn.textContent = '☀️ Modo Claro'; } };
     const clearAllData = () => { if(confirm("⚠️ ¿Borrar TODA la base de datos?")) { tasks = []; folders = ['General']; Storage.saveTasks(); Storage.saveFolders(); showToast("Formateado. 🗑️"); } };
-    const exportData = () => { /* ... */ };
+    const exportData = () => { if(tasks.length===0) return; const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks)); a.download = "backup.json"; document.body.appendChild(a); a.click(); a.remove(); };
+    
     let isLoggingIn = false;
     const login = async () => { if(isLoggingIn) return; isLoggingIn = true; try { await signInWithPopup(auth, provider); } catch (error) { if(error.code !== 'auth/cancelled-popup-request') alert("Error: " + error.message); } finally { isLoggingIn = false; } };
     const logout = () => signOut(auth).then(() => { tasks = []; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
@@ -338,6 +358,9 @@ const App = (() => {
         if(document.getElementById('exitFocus')) document.getElementById('exitFocus').addEventListener('click', stopFocus);
         if(document.getElementById('googleLoginBtn')) document.getElementById('googleLoginBtn').addEventListener('click', login);
         checkSharedLinks(); 
+
+        const storedKey = localStorage.getItem('aiApiKey');
+        if(storedKey && document.getElementById('apiKeyInput')) { document.getElementById('apiKeyInput').value = storedKey; }
 
         onAuthStateChanged(auth, (user) => {
             if (user) { 
@@ -352,7 +375,7 @@ const App = (() => {
         });
     };
 
-    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder, deleteFolder };
+    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder, deleteFolder, saveApiKey };
 })();
 
 window.App = App;
