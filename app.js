@@ -166,19 +166,68 @@ const App = (() => {
     const deleteTask = (id) => { if(confirm('¿Destruir tarea?')) { tasks = tasks.filter(t => t.id !== id); Storage.saveTasks(); } };
     const moveTask = (id, newStatus) => { const t = tasks.find(x => x.id === id); if(t) { t.status = newStatus; Storage.saveTasks(); } };
 
+        // --- NUEVO: SINTETIZADOR DE SONIDO (Ding!) ---
+    const playDing = () => {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.type = 'sine'; // Tipo de onda suave
+            osc.frequency.setValueAtTime(880, ctx.currentTime); // Tono alto (Nota A5)
+            
+            gain.gain.setValueAtTime(1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5); // Se desvanece suavemente
+            
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 1.5);
+        } catch(e) { console.log("Tu navegador no soporta sonido", e); }
+    };
+
+    // --- RELOJ FOCUS ACTUALIZADO ---
     const startFocus = (id) => {
         const task = tasks.find(t => t.id === id); if(!task) return;
-        document.getElementById('focusTitle').textContent = task.title || "Enfoque"; document.getElementById('focusOverlay').classList.remove('hidden');
+        
+        // Pedir permiso para notificaciones al usuario la primera vez
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+
+        document.getElementById('focusTitle').textContent = task.title || "Enfoque"; 
+        document.getElementById('focusOverlay').classList.remove('hidden');
+        
+        // Tiempo de la tarea en milisegundos
         const endTime = Date.now() + ((task.time || 25) * 60 * 1000);
+        
         const updateTimer = () => {
             const remaining = Math.round((endTime - Date.now()) / 1000);
-            if (remaining <= 0) { clearInterval(focusInterval); document.getElementById('focusTimer').textContent = "00:00"; alert('¡Tiempo terminado!'); stopFocus(); return; }
+            if (remaining <= 0) { 
+                clearInterval(focusInterval); 
+                document.getElementById('focusTimer').textContent = "00:00"; 
+                
+                // 🔔 LA MAGIA OCURRE AQUÍ: Suena la campana y lanza la notificación
+                playDing(); 
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("¡Tiempo Terminado! ⏱️", { 
+                        body: `Has superado el tiempo para: "${task.title}". ¡Vuelve a Smart-Time y márcala como completada!`, 
+                        icon: "./icon.png" 
+                    });
+                }
+                
+                alert('¡Tiempo de enfoque terminado! Vuelve a la realidad.'); 
+                stopFocus(); 
+                return; 
+            }
             document.getElementById('focusTimer').textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
         };
         updateTimer(); focusInterval = setInterval(updateTimer, 1000);
     };
+    
     const stopFocus = () => { clearInterval(focusInterval); document.getElementById('focusOverlay').classList.add('hidden'); };
-
     const UI = {
         renderFolders: () => {
             const list = document.getElementById('folderList'); const select = document.getElementById('folderInput');
