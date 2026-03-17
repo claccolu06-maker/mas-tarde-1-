@@ -189,16 +189,48 @@ const App = (() => {
     };
 
     // --- RELOJ FOCUS ACTUALIZADO ---
+       // --- RELOJ FOCUS CON BOTÓN DE URL ---
     const startFocus = (id) => {
         const task = tasks.find(t => t.id === id); if(!task) return;
         
-        // Pedir permiso para notificaciones al usuario la primera vez
-        if ("Notification" in window && Notification.permission === "default") {
-            Notification.requestPermission();
-        }
+        if ("Notification" in window && Notification.permission === "default") { Notification.requestPermission(); }
 
         document.getElementById('focusTitle').textContent = task.title || "Enfoque"; 
         document.getElementById('focusOverlay').classList.remove('hidden');
+        
+        // --- NUEVO: Lógica del Enlace ---
+        const urlBtn = document.getElementById('focusUrlBtn');
+        if (urlBtn) {
+            if (task.url && task.url.trim() !== "") {
+                // Asegurarnos de que el enlace funcione aunque no le pongan https://
+                let finalUrl = task.url.trim();
+                if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) finalUrl = 'https://' + finalUrl;
+                urlBtn.href = finalUrl;
+                urlBtn.style.display = 'inline-block'; // Mostrar botón
+            } else {
+                urlBtn.style.display = 'none'; // Ocultar si no hay link
+            }
+        }
+
+        const endTime = Date.now() + ((task.time || 25) * 60 * 1000);
+        
+        const updateTimer = () => {
+            const remaining = Math.round((endTime - Date.now()) / 1000);
+            if (remaining <= 0) { 
+                clearInterval(focusInterval); 
+                document.getElementById('focusTimer').textContent = "00:00"; 
+                playDing(); 
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("¡Tiempo Terminado! ⏱️", { body: `Has superado el tiempo para: "${task.title}".`, icon: "./icon.png" });
+                }
+                alert('¡Tiempo de enfoque terminado! Vuelve a la realidad.'); 
+                stopFocus(); 
+                return; 
+            }
+            document.getElementById('focusTimer').textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
+        };
+        updateTimer(); focusInterval = setInterval(updateTimer, 1000);
+    };;
         
         // Tiempo de la tarea en milisegundos
         const endTime = Date.now() + ((task.time || 25) * 60 * 1000);
