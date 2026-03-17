@@ -266,3 +266,12 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 
     .timer-display { font-size: 4.5rem; }
     .card-actions { flex-wrap: wrap; gap: 10px; }
 }
+/* --- HÁBITOS COMPLETADOS (Se quedan en la pizarra) --- */
+.kanban-card.habit-done {
+    opacity: 0.6;
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px dashed var(--border-color);
+}
+[data-theme="dark"] .kanban-card.habit-done { background: rgba(255, 255, 255, 0.02); }
+.kanban-card.habit-done h4 { text-decoration: line-through; color: var(--text-muted); }
+.kanban-card.habit-done .btn-play, .kanban-card.habit-done .btn-edit { display: none; /* Ocultamos jugar y editar si ya está hecho */ }
