@@ -162,53 +162,77 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 
 /* =========================================================
    MOBILE RESPONSIVENESS (Native App Feel)
 ========================================================= */
+/* =========================================================
+   CORRECCIONES CLEAN UI & MOBILE RESPONSIVENESS
+========================================================= */
+
+/* 1. Matar el efecto Neón en Analytics */
+.metric-value { 
+    text-shadow: none !important; 
+    font-weight: 700; 
+}
+
+/* 2. Rediseño del menú para móviles (Top App Bar compacta) */
 @media (max-width: 768px) {
-    /* El layout pasa a ser vertical */
     .dashboard-layout { flex-direction: column; }
     
-    /* El Menú Lateral se convierte en un Top Nav deslizable */
-    .sidebar { width: 100%; padding: 1rem; border-right: none; border-bottom: 1px solid var(--border-color); }
-    .logo h2 { margin-bottom: 1rem; font-size: 1.1rem; text-align: center; }
+    .sidebar { 
+        width: 100%; 
+        padding: 1rem 0.5rem; 
+        border-right: none; 
+        border-bottom: 1px solid var(--border-color); 
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
     
+    .logo h2 { margin-bottom: 0; font-size: 1.1rem; text-align: center; }
+    
+    /* Forzar una sola línea horizontal deslizable con el dedo */
     .nav-menu { 
-        flex-direction: row; 
+        flex-direction: row !important; 
+        flex-wrap: nowrap !important;
         overflow-x: auto; 
-        gap: 0.5rem; 
-        padding-bottom: 0.5rem; 
-        /* Scroll suave táctil y ocultar barra de scroll */
         -webkit-overflow-scrolling: touch; 
         scrollbar-width: none; 
+        padding-bottom: 5px;
+        align-items: center;
     }
     .nav-menu::-webkit-scrollbar { display: none; }
     
-    .nav-btn { white-space: nowrap; font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 20px; }
+    .nav-btn { white-space: nowrap; flex: 0 0 auto; font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 20px; }
     .nav-btn.active { border-left: none; border-bottom: 2px solid var(--text-main); border-radius: 20px; }
     
-    /* Ocultamos elementos secundarios en el menú superior para ahorrar espacio */
+    /* Ocultar títulos innecesarios para ahorrar espacio */
     .sidebar-divider, .sidebar-title { display: none; }
-    .folder-list { flex-direction: row; max-height: none; }
+    .folder-list { flex-direction: row; max-height: none; align-items: center; }
     .folder-item { display: inline-flex; }
-    .sidebar-footer { display: none; /* Movemos el logout a ajustes en el futuro si es necesario */ }
+    .add-folder-btn { margin-top: 0; padding: 0.4rem 0.8rem; }
 
-    /* Área de Contenido */
+    /* Botones de Footer (Tema y Salir) lado a lado */
+    .sidebar-footer { 
+        flex-direction: row; 
+        justify-content: space-between;
+        border-top: none; 
+        padding-top: 0; 
+        gap: 10px;
+    }
+    .sidebar-footer .nav-btn { flex: 1; text-align: center; background: var(--input-bg); }
+
+    /* Área de Contenido y Pizarra deslizable */
     .main-content { padding: 1.5rem 1rem; overflow-x: hidden; }
     .tab-header { margin-bottom: 1.5rem; }
     
-    /* Kanban tipo Trello (Swipe horizontal) */
     .kanban-board { 
         flex-direction: row; 
         overflow-x: auto; 
         scroll-snap-type: x mandatory; 
         padding-bottom: 1rem; 
-        margin: 0 -1rem; /* Rompe el padding para deslizar de borde a borde */
+        margin: 0 -1rem; 
         padding: 0 1rem;
     }
-    .kanban-column { 
-        min-width: 85vw; /* Ocupa casi toda la pantalla */
-        scroll-snap-align: center; 
-    }
+    .kanban-column { min-width: 85vw; scroll-snap-align: center; }
     
-    /* Ajustes de Cuadrículas y Fuentes */
     .tasks-grid, .stats-grid { grid-template-columns: 1fr; gap: 1rem; }
     .metrics-grid { grid-template-columns: 1fr 1fr; }
     .focus-content { padding: 2rem 1rem; }
