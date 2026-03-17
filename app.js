@@ -21,7 +21,7 @@ let currentUser = null;
 
 const App = (() => {
     let tasks = [];
-    let folders = ['General', 'Economía 📈', 'Deporte 💪']; 
+    let folders = ['General', 'Finance', 'Health']; 
     let currentActiveFolder = 'General';
     let focusInterval;
     let myChart = null;
@@ -33,7 +33,7 @@ const App = (() => {
         if(!c) return;
         const t = document.createElement('div');
         t.className = 'toast'; t.textContent = msg;
-        c.appendChild(t); setTimeout(() => t.remove(), 4000);
+        c.appendChild(t); setTimeout(() => t.remove(), 3000);
     };
 
     const getLocalDate = (offsetDays = 0) => {
@@ -83,41 +83,30 @@ const App = (() => {
     };
 
     const addFolder = () => {
-        const name = prompt("Nombre de la nueva carpeta (ej: Universidad 🎓):");
+        const name = prompt("Enter project name:");
         if(name && name.trim() !== "") {
-            if(!folders.includes(name.trim())) { folders.push(name.trim()); Storage.saveFolders(); showToast("Carpeta creada 📁"); } 
-            else alert("Esa carpeta ya existe.");
+            if(!folders.includes(name.trim())) { folders.push(name.trim()); Storage.saveFolders(); showToast("Project created."); } 
+            else alert("Project already exists.");
         }
     };
 
     const deleteFolder = (folderName) => {
         if(folderName === 'General') return; 
-        if(confirm(`⚠️ ¿Seguro que quieres borrar la carpeta "${folderName}"?\n(Las tareas se moverán a 'General').`)) {
+        if(confirm(`Delete project "${folderName}"?\nTasks will be moved to General.`)) {
             let needsTaskSave = false;
             tasks.forEach(t => { if(t.folder === folderName) { t.folder = 'General'; needsTaskSave = true; } });
             if(needsTaskSave) Storage.saveTasks();
             folders = folders.filter(f => f !== folderName); Storage.saveFolders();
             if(currentActiveFolder === folderName) {
-                currentActiveFolder = 'General'; document.getElementById('currentFolderName').textContent = `📁 General`;
+                currentActiveFolder = 'General'; document.getElementById('currentFolderName').textContent = `General`;
                 switchTab('bandeja', document.querySelector('.nav-btn'));
             }
-            showToast("Carpeta eliminada 🗑️"); UI.renderFolders(); UI.render();
+            showToast("Project deleted."); UI.renderFolders(); UI.render();
         }
     };
 
-    const openFolder = (name, btn) => { 
-        currentActiveFolder = name; 
-        document.getElementById('currentFolderName').textContent = `📁 ${name}`; 
-        switchTab('carpetas', btn); 
-        UI.render(); 
-    };
-
-    const setEnergyFilter = (level, btn) => { 
-        currentEnergyFilter = level; 
-        document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active')); 
-        if(btn) btn.classList.add('active'); 
-        UI.render(); 
-    };
+    const openFolder = (name, btn) => { currentActiveFolder = name; document.getElementById('currentFolderName').textContent = name; switchTab('carpetas', btn); UI.render(); };
+    const setEnergyFilter = (level, btn) => { currentEnergyFilter = level; document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); UI.render(); };
 
     const checkSharedLinks = () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -126,7 +115,7 @@ const App = (() => {
             if (document.getElementById('titleInput')) document.getElementById('titleInput').value = sharedTitle || '';
             if (document.getElementById('urlInput')) document.getElementById('urlInput').value = sharedUrl || '';
             window.history.replaceState({}, document.title, window.location.pathname);
-            showToast("🔗 ¡Enlace recibido desde el móvil!");
+            showToast("Link captured.");
         }
     };
 
@@ -150,14 +139,14 @@ const App = (() => {
             isHabit: isHabitChecked, streak: 0, lastCompletedDate: null, completed: false, status: 'bandeja'
         });
         Storage.saveTasks(); document.getElementById('taskForm').reset(); document.getElementById('folderInput').value = folderVal; 
-        showToast(isHabitChecked ? "Hábito creado. 🔁" : "Guardado en " + folderVal + " 📁");
+        showToast("Task saved.");
     };
 
     const editTask = (id) => {
         const task = tasks.find(t => t.id === id); if (!task) return;
-        const newTitle = prompt("Corrige el nombre:", task.title); if (!newTitle || newTitle.trim() === "") return;
-        const newTime = prompt("Cambia el tiempo (minutos):", task.time); if (!newTime || isNaN(newTime) || newTime <= 0) return;
-        task.title = newTitle.trim(); task.time = parseInt(newTime); Storage.saveTasks(); showToast("Actualizada. ✏️");
+        const newTitle = prompt("Update description:", task.title); if (!newTitle || newTitle.trim() === "") return;
+        const newTime = prompt("Update allocated time (min):", task.time); if (!newTime || isNaN(newTime) || newTime <= 0) return;
+        task.title = newTitle.trim(); task.time = parseInt(newTime); Storage.saveTasks(); showToast("Task updated.");
     };
 
     const toggleComplete = (id) => { 
@@ -166,14 +155,13 @@ const App = (() => {
             t.completed = !t.completed; 
             if(t.completed) {
                 if(t.isHabit) { const today = getLocalDate(0); if(t.lastCompletedDate !== today) { t.streak = (t.streak || 0) + 1; t.lastCompletedDate = today; } }
-                showToast("¡Completada! 🎉");
-                if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#38bdf8', '#a855f7', '#10b981', '#f59e0b'] });
+                showToast("Task completed.");
             } else { if(t.isHabit) { t.streak = Math.max(0, (t.streak || 0) - 1); t.lastCompletedDate = null; } }
             Storage.saveTasks(); 
         } 
     };
 
-    const deleteTask = (id) => { if(confirm('¿Destruir tarea?')) { tasks = tasks.filter(t => t.id !== id); Storage.saveTasks(); } };
+    const deleteTask = (id) => { if(confirm('Delete task permanently?')) { tasks = tasks.filter(t => t.id !== id); Storage.saveTasks(); } };
     const moveTask = (id, newStatus) => { const t = tasks.find(x => x.id === id); if(t) { t.status = newStatus; Storage.saveTasks(); } };
 
     const playDing = () => {
@@ -187,15 +175,13 @@ const App = (() => {
             gain.gain.setValueAtTime(1, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
             osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1.5);
-        } catch(e) { console.log("Audio no soportado", e); }
+        } catch(e) { console.log("Audio not supported"); }
     };
 
     const startFocus = (id) => {
         const task = tasks.find(t => t.id === id); if(!task) return;
-        
         if ("Notification" in window && Notification.permission === "default") { Notification.requestPermission(); }
-
-        document.getElementById('focusTitle').textContent = task.title || "Enfoque"; 
+        document.getElementById('focusTitle').textContent = task.title || "Focus Session"; 
         document.getElementById('focusOverlay').classList.remove('hidden');
         
         const urlBtn = document.getElementById('focusUrlBtn');
@@ -203,27 +189,20 @@ const App = (() => {
             if (task.url && task.url.trim() !== "") {
                 let finalUrl = task.url.trim();
                 if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) finalUrl = 'https://' + finalUrl;
-                urlBtn.href = finalUrl;
-                urlBtn.style.display = 'inline-block';
-            } else {
-                urlBtn.style.display = 'none';
-            }
+                urlBtn.href = finalUrl; urlBtn.style.display = 'inline-block';
+            } else { urlBtn.style.display = 'none'; }
         }
 
         const endTime = Date.now() + ((task.time || 25) * 60 * 1000);
-        
         const updateTimer = () => {
             const remaining = Math.round((endTime - Date.now()) / 1000);
             if (remaining <= 0) { 
-                clearInterval(focusInterval); 
-                document.getElementById('focusTimer').textContent = "00:00"; 
+                clearInterval(focusInterval); document.getElementById('focusTimer').textContent = "00:00"; 
                 playDing(); 
                 if ("Notification" in window && Notification.permission === "granted") {
-                    new Notification("¡Tiempo Terminado! ⏱️", { body: `Has superado el tiempo para: "${task.title}".`, icon: "./icon.png" });
+                    new Notification("Session Complete", { body: `Time allocation finished for: "${task.title}".` });
                 }
-                alert('¡Tiempo de enfoque terminado! Vuelve a la realidad.'); 
-                stopFocus(); 
-                return; 
+                alert('Session complete. Return to dashboard.'); stopFocus(); return; 
             }
             document.getElementById('focusTimer').textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
         };
@@ -239,9 +218,9 @@ const App = (() => {
                 list.innerHTML = '';
                 folders.forEach(f => {
                     const folderItem = document.createElement('div'); folderItem.className = 'folder-item';
-                    const btn = document.createElement('button'); btn.className = 'nav-btn'; btn.innerHTML = `📁 ${f}`; btn.onclick = function() { App.openFolder(f, this); }; folderItem.appendChild(btn);
+                    const btn = document.createElement('button'); btn.className = 'nav-btn'; btn.innerHTML = f; btn.onclick = function() { App.openFolder(f, this); }; folderItem.appendChild(btn);
                     if(f !== 'General') {
-                        const delBtn = document.createElement('button'); delBtn.className = 'delete-folder-btn'; delBtn.innerHTML = '✖'; delBtn.onclick = (e) => { e.stopPropagation(); App.deleteFolder(f); }; folderItem.appendChild(delBtn);
+                        const delBtn = document.createElement('button'); delBtn.className = 'delete-folder-btn'; delBtn.innerHTML = '✕'; delBtn.onclick = (e) => { e.stopPropagation(); App.deleteFolder(f); }; folderItem.appendChild(delBtn);
                     }
                     list.appendChild(folderItem);
                 });
@@ -252,15 +231,15 @@ const App = (() => {
             if(tasks.length === 0) return;
             const completed = tasks.filter(t => t.completed); const c = completed.length;
             if(document.getElementById('progressFill')) document.getElementById('progressFill').style.width = `${(c / tasks.length) * 100}%`;
-            if(document.getElementById('statsNumbers')) document.getElementById('statsNumbers').textContent = `${c}/${tasks.length} listas`;
+            if(document.getElementById('statsNumbers')) document.getElementById('statsNumbers').textContent = `${c}/${tasks.length} tasks`;
 
             const totalMins = completed.reduce((sum, task) => sum + (task.time || 0), 0);
             if(document.getElementById('totalMinutes')) {
-                document.getElementById('totalMinutes').textContent = `${totalMins} min`; document.getElementById('totalCompleted').textContent = `${c}`;
-                let level = "Novato 🌱"; let color = "#94a3b8"; 
-                if(totalMins >= 30)  { level = "Aprendiz 📘"; color = "#38bdf8"; } 
-                if(totalMins >= 120) { level = "Guerrero ⚔️"; color = "#a855f7"; } 
-                if(totalMins >= 500) { level = "Maestro 👑"; color = "#f59e0b"; } 
+                document.getElementById('totalMinutes').textContent = `${totalMins}m`; document.getElementById('totalCompleted').textContent = `${c}`;
+                let level = "Analyst"; let color = "#71717a"; 
+                if(totalMins >= 60)  { level = "Associate"; color = "#2563eb"; } 
+                if(totalMins >= 300) { level = "Manager"; color = "#8b5cf6"; } 
+                if(totalMins >= 1000) { level = "Executive"; color = "#f59e0b"; } 
                 if(document.getElementById('userLevel')) { document.getElementById('userLevel').innerHTML = level; document.getElementById('userLevel').style.color = color; }
             }
         },
@@ -270,30 +249,30 @@ const App = (() => {
             let enBandeja = 0;
 
             const createCardDOM = (task) => {
-                const s_title = task.title || "Tarea"; const s_time = task.time || 15; const s_cat = task.category || "proyecto"; const s_status = task.status || "bandeja"; const s_energy = task.energy || "media"; const s_folder = task.folder || "General";
-                const s_habit = task.isHabit ? `<span class="streak-badge">🔥 ${task.streak || 0}</span>` : '';
-                let energyIcon = s_energy === "alta" ? "⚡" : (s_energy === "baja" ? "🪫" : "🔋");
+                const s_title = task.title || "Task"; const s_time = task.time || 15; const s_cat = task.category || "Project"; const s_status = task.status || "bandeja"; const s_energy = task.energy || "media"; const s_folder = task.folder || "General";
+                const s_habit = task.isHabit ? `<span class="streak-badge">Streak: ${task.streak || 0}</span>` : '';
+                let energyLabel = s_energy === "alta" ? "High" : (s_energy === "baja" ? "Low" : "Normal");
 
                 const card = document.createElement('div'); card.className = `kanban-card`; card.draggable = true; 
                 card.ondragstart = (e) => App.dragStart(e, task.id); card.ondragend = (e) => e.target.classList.remove('dragging');
 
                 card.innerHTML = `
-                    <div style="font-size:0.75rem; margin-bottom: 5px; font-weight:bold; display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+                    <div style="font-size:0.75rem; margin-bottom: 5px; font-weight:600; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <span class="pill ${s_cat}">${s_cat.toUpperCase()}</span>
-                        <span>⏱ ${s_time}m</span>
-                        <span>${energyIcon}</span>
-                        <span style="color:var(--accent-blue);">📁 ${s_folder}</span>
+                        <span style="color:var(--text-muted);">${s_time}m</span>
+                        <span style="color:var(--text-muted);">${energyLabel}</span>
+                        <span style="color:var(--accent-blue);">${s_folder}</span>
                         ${s_habit}
                     </div>
                     <h4 style="margin: 0; font-size: 1rem;">${s_title}</h4>
-                    <select aria-label="Cambiar estado" style="margin:10px 0; width:100%; padding:5px; border-radius:5px; background:var(--input-bg); color:var(--text-main)" onchange="App.moveTask('${task.id}', this.value)">
-                        <option value="bandeja" ${s_status === 'bandeja'?'selected':''}>📥 Bandeja</option><option value="later" ${s_status === 'later'?'selected':''}>⏳ Algún día</option><option value="week" ${s_status === 'week'?'selected':''}>📅 Esta Semana</option><option value="today" ${s_status === 'today'?'selected':''}>🔥 Hacer HOY</option>
+                    <select aria-label="Status" style="margin:10px 0; width:100%;" onchange="App.moveTask('${task.id}', this.value)">
+                        <option value="bandeja" ${s_status === 'bandeja'?'selected':''}>Inbox</option><option value="later" ${s_status === 'later'?'selected':''}>Backlog</option><option value="week" ${s_status === 'week'?'selected':''}>This Week</option><option value="today" ${s_status === 'today'?'selected':''}>Today</option>
                     </select>
-                    <div style="display:flex; justify-content:space-between; margin-top: 10px;">
-                        <button style="background:none;border:none;cursor:pointer;color:var(--accent-blue);" onclick="App.startFocus('${task.id}')" title="Enfoque">▶️</button>
-                        <button style="background:none;border:none;cursor:pointer;color:#f59e0b;" onclick="App.editTask('${task.id}')" title="Editar">✏️</button>
-                        <button style="background:none;border:none;cursor:pointer;color:var(--cta-green);" onclick="App.toggleComplete('${task.id}')" title="Completar">✔️</button>
-                        <button style="background:none;border:none;cursor:pointer;color:var(--danger-red);" onclick="App.deleteTask('${task.id}')" title="Borrar">🗑</button>
+                    <div class="card-actions">
+                        <button class="btn-play" onclick="App.startFocus('${task.id}')">Execute</button>
+                        <button onclick="App.editTask('${task.id}')">Edit</button>
+                        <button class="btn-complete" onclick="App.toggleComplete('${task.id}')">Complete</button>
+                        <button class="btn-delete" onclick="App.deleteTask('${task.id}')">Delete</button>
                     </div>`;
                 return card;
             };
@@ -305,10 +284,10 @@ const App = (() => {
                     if(g.history) g.history.innerHTML += `
                         <div class="history-item">
                             <div style="display:flex; flex-direction:column;">
-                                <span style="text-decoration:line-through; color:var(--text-muted); font-weight:bold;">${task.isHabit ? `<span class="streak-badge">🔥 ${task.streak||0}</span>`:''} ${task.title}</span>
-                                <span style="font-size:0.75rem; color:var(--cta-green);">+${task.time} min de XP</span>
+                                <span style="text-decoration:line-through; color:var(--text-muted); font-weight:500;">${task.title}</span>
+                                <span style="font-size:0.75rem; color:var(--cta-green);">+${task.time} min</span>
                             </div>
-                            <button onclick="App.toggleComplete('${task.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">↩️</button>
+                            <button onclick="App.toggleComplete('${task.id}')" style="background:none; border:none; cursor:pointer; color:var(--text-muted);">Undo</button>
                         </div>`;
                     return;
                 }
@@ -330,41 +309,46 @@ const App = (() => {
             const ctx = document.getElementById('statsChart'); if(!ctx) return;
             const comp = tasks.filter(t => t.completed); if(myChart) myChart.destroy();
             const counts = ['video', 'articulo', 'curso', 'proyecto'].map(c => comp.filter(t => (t.category || 'proyecto') === c).length);
-            const fontColor = document.documentElement.getAttribute('data-theme') === 'dark' ? 'white' : 'black';
-            myChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['Videos', 'Artículos', 'Cursos', 'Proyectos'], datasets: [{ data: counts, backgroundColor: ['#a855f7', '#38bdf8', '#10b981', '#f59e0b'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: fontColor } } } }});
+            const fontColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#fafaef' : '#09090b';
+            myChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['Video', 'Article', 'Course', 'Project'], datasets: [{ data: counts, backgroundColor: ['#8b5cf6', '#0ea5e9', '#10b981', '#f59e0b'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: fontColor } } } }});
         }
     };
 
     const saveApiKey = () => {
         const key = document.getElementById('apiKeyInput').value.trim();
-        if(key) { localStorage.setItem('aiApiKey', key); showToast("Llave IA Guardada Correctamente 🧠"); } 
-        else { localStorage.removeItem('aiApiKey'); showToast("Llave IA Eliminada."); }
+        if(key) { localStorage.setItem('aiApiKey', key); showToast("Configuration saved."); } 
+        else { localStorage.removeItem('aiApiKey'); showToast("Configuration removed."); }
     };
 
+    // --- EXECUTIVE AI ASSISTANT ---
     const askGemini = async () => {
         const apiKey = localStorage.getItem('aiApiKey');
-        if (!apiKey) { alert("⚠️ IA DESCONECTADA: Necesitas poner tu Llave API gratuita en la pestaña de 'Ajustes' primero."); switchTab('ajustes', document.querySelectorAll('.nav-btn')[3]); return; }
+        if (!apiKey) { alert("API Key required. Please configure settings."); switchTab('ajustes', document.querySelectorAll('.nav-btn')[3]); return; }
         const aiCard = document.getElementById('aiResponseCard'); const aiText = document.getElementById('aiResponseText');
         const pendingTasks = tasks.filter(t => !t.completed);
-        if(pendingTasks.length === 0) { showToast("Tu pizarra está vacía. No hay nada que analizar. 🤖"); return; }
-        aiCard.classList.remove('hidden'); aiText.innerHTML = '<i>Analizando tu nivel de procrastinación a la velocidad de la luz... ⚡</i>';
-        const tasksString = pendingTasks.map(t => `- [${t.status.toUpperCase()}] ${t.title} (${t.time}m, Energía: ${t.energy})`).join('\n');
-        const promptSystem = `Eres un coach de productividad sarcástico, crudo y divertido. Tu misión es evitar que el usuario procrastine. Reglas: 1. Elige SOLO 1 tarea que deba hacer AHORA MISMO y dile por qué (basándote en su tiempo o energía). 2. Ríete un poco de él por dejar cosas para "algún día". 3. Sé súper breve (máximo 3 frases cortas). Empieza a dar caña directamente, sin decir Hola.`;
-        const promptUser = `Mi energía actual es: ${currentEnergyFilter === 'all' ? 'Variada' : currentEnergyFilter}. Estas son mis tareas pendientes:\n${tasksString}`;
+        if(pendingTasks.length === 0) { showToast("No tasks available for analysis."); return; }
+        
+        aiCard.classList.remove('hidden'); aiText.innerHTML = '<i>Processing workload data...</i>';
+        const tasksString = pendingTasks.map(t => `- [${t.status.toUpperCase()}] ${t.title} (${t.time}m, Energy: ${t.energy})`).join('\n');
+        
+        const promptSystem = `You are an Executive Productivity Assistant. Your goal is to maximize the user's efficiency. Analyze the pending tasks and the user's current energy level. Recommend EXACTLY ONE task to execute immediately. Be concise, professional, and logical. Do not use emojis. Provide a brief rationale.`;
+        const promptUser = `Current energy capacity: ${currentEnergyFilter === 'all' ? 'Mixed' : currentEnergyFilter}. Pending tasks:\n${tasksString}`;
+        
         try {
             const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: [{ role: "system", content: promptSystem }, { role: "user", content: promptUser }] }) });
-            if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error?.message || "Error del servidor."); }
+            if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error?.message || "Server Error."); }
             const data = await response.json(); const aiResponse = data.choices[0].message.content;
-            aiText.innerHTML = ''; let i = 0; const typeWriter = setInterval(() => { if(i < aiResponse.length) { aiText.innerHTML += aiResponse.charAt(i); i++; } else { clearInterval(typeWriter); } }, 25); 
-        } catch (error) { console.error(error); aiText.innerHTML = `<span style="color:var(--danger-red)">Error: ${error.message}</span>`; }
+            
+            aiText.innerHTML = ''; let i = 0; const typeWriter = setInterval(() => { if(i < aiResponse.length) { aiText.innerHTML += aiResponse.charAt(i); i++; } else { clearInterval(typeWriter); } }, 15); 
+        } catch (error) { console.error(error); aiText.innerHTML = `<span style="color:var(--danger-red)">System Error: ${error.message}</span>`; }
     };
 
-    const toggleTheme = () => { const html = document.documentElement; const btn = document.getElementById('themeToggle'); if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); btn.textContent = '🌙 Modo Oscuro'; } else { html.setAttribute('data-theme', 'dark'); btn.textContent = '☀️ Modo Claro'; } };
-    const clearAllData = () => { if(confirm("⚠️ ¿Borrar TODA la base de datos?")) { tasks = []; folders = ['General']; Storage.saveTasks(); Storage.saveFolders(); showToast("Formateado. 🗑️"); } };
+    const toggleTheme = () => { const html = document.documentElement; const btn = document.getElementById('themeToggle'); if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); btn.textContent = 'Dark Mode'; } else { html.setAttribute('data-theme', 'dark'); btn.textContent = 'Light Mode'; } UI.renderChart(); };
+    const clearAllData = () => { if(confirm("Format database? This action is irreversible.")) { tasks = []; folders = ['General']; Storage.saveTasks(); Storage.saveFolders(); showToast("Database formatted."); } };
     const exportData = () => { if(tasks.length===0) return; const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks)); a.download = "backup.json"; document.body.appendChild(a); a.click(); a.remove(); };
     
     let isLoggingIn = false;
-    const login = async () => { if(isLoggingIn) return; isLoggingIn = true; try { await signInWithPopup(auth, provider); } catch (error) { if(error.code !== 'auth/cancelled-popup-request') alert("Error: " + error.message); } finally { isLoggingIn = false; } };
+    const login = async () => { if(isLoggingIn) return; isLoggingIn = true; try { await signInWithPopup(auth, provider); } catch (error) { if(error.code !== 'auth/cancelled-popup-request') alert("Authentication Error: " + error.message); } finally { isLoggingIn = false; } };
     const logout = () => signOut(auth).then(() => { tasks = []; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
 
     const init = () => {
@@ -379,7 +363,7 @@ const App = (() => {
         onAuthStateChanged(auth, (user) => {
             if (user) { 
                 currentUser = user; 
-                if(document.getElementById('userName')) { document.getElementById('userName').textContent = user.displayName || "Agente"; document.getElementById('userEmail').textContent = user.email; }
+                if(document.getElementById('userName')) { document.getElementById('userName').textContent = user.displayName || "User"; document.getElementById('userEmail').textContent = user.email; }
                 document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('mainDashboard').classList.remove('hidden'); 
                 switchTab('bandeja', document.querySelector('.nav-btn.active'));
                 Storage.listen(); 
