@@ -266,15 +266,21 @@
     </div>
 
     <!-- ================= MODO FOCUS ================= -->
+        <!-- ================= MODO FOCUS ================= -->
     <div id="focusOverlay" class="focus-overlay hidden">
-        <div class="focus-content glass-panel" style="background: rgba(15, 23, 42, 0.9);">
+        <div class="focus-content glass-panel" style="background: rgba(15, 23, 42, 0.95); padding: 3rem; border-radius: 24px; border: 1px solid var(--accent-blue);">
             <span class="focus-badge">MODO ZEN ACTIVADO 🧘‍♂️</span>
             <h2 id="focusTitle" class="neon-text" style="font-size: 2.5rem; margin: 20px 0;">Tarea</h2>
             <div id="focusTimer" class="timer-display">00:00</div>
-            <button id="exitFocus" class="cta-button danger" style="margin-top: 20px;">Abandonar Sesión</button>
+            
+            <!-- NUEVO: BOTÓN DE ENLACE -->
+            <a id="focusUrlBtn" href="#" target="_blank" class="cta-button" style="display: none; background: var(--cta-green); text-decoration: none; margin: 10px auto 20px auto; width: fit-content; padding: 10px 20px;">
+                🔗 Abrir material de la tarea
+            </a>
+            <br>
+            <button id="exitFocus" class="cta-button danger" style="margin-top: 10px;">Abandonar Sesión</button>
         </div>
     </div>
-
     <!-- TOASTS -->
     <div id="toast-container"></div>
     
