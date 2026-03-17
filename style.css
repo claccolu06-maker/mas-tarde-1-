@@ -153,3 +153,53 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 10
 .folder-item .nav-btn { flex-grow: 1; margin: 0; }
 .delete-folder-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 5px 10px; border-radius: 8px; font-size: 0.8rem; transition: 0.2s; }
 .delete-folder-btn:hover { background: rgba(239, 68, 68, 0.1); color: var(--danger-red); }
+
+/* =========================================================
+   REDISEÑO ANTI-SATURACIÓN (Clean & Minimalist Update) 
+========================================================= */
+
+/* 1. Más espacio y curvas más suaves en general */
+:root { --radius: 18px; }
+.main-content { padding: 3rem; } /* Más aire en los bordes de la pantalla */
+
+/* 2. Tarjetas menos agresivas y más separadas */
+.tasks-grid { gap: 2rem; } /* Separa más las tareas entre sí */
+.kanban-board { gap: 2rem; padding-bottom: 2rem; }
+.task-card, .kanban-card { 
+    padding: 1.8rem; /* Tarjetas más grandes por dentro */
+    background: rgba(30, 41, 59, 0.3); /* Fondo más transparente */
+    border: 1px solid rgba(255, 255, 255, 0.05); /* Borde súper sutil */
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3); /* Sombra suave y flotante */
+}
+
+/* 3. Limpiar las columnas del Kanban */
+.kanban-column {
+    background: transparent; /* Quitamos el fondo sólido de las columnas */
+    border: 1px dashed rgba(255, 255, 255, 0.1); /* Borde punteado minimalista */
+    padding: 1.5rem;
+}
+.column-title { font-size: 1.2rem; margin-bottom: 20px; border-bottom: none; }
+
+/* 4. Arreglo del Historial (Más grande y con Scroll bonito) */
+.stats-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Se adapta mejor sin apretujarse */
+    gap: 2.5rem; 
+}
+.history-list-container { padding: 2rem; }
+.history-list { 
+    max-height: 400px; /* Le damos más altura para que no se vea cortado */
+    padding-right: 15px; 
+}
+.history-item {
+    padding: 15px 20px;
+    background: rgba(0,0,0,0.15); /* Contraste bajado */
+    border-radius: 12px;
+    border-left: 3px solid var(--cta-green); /* Borde más fino */
+}
+
+/* Scrollbar Personalizado para que quede limpio */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
