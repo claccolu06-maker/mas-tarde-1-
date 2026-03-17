@@ -227,22 +227,7 @@ const App = (() => {
             }
             if(select) { select.innerHTML = ''; folders.forEach(f => { select.innerHTML += `<option value="${f}">${f}</option>`; }); }
         },
-        updateStats: () => {
-            if(tasks.length === 0) return;
-            const completed = tasks.filter(t => t.completed); const c = completed.length;
-            if(document.getElementById('progressFill')) document.getElementById('progressFill').style.width = `${(c / tasks.length) * 100}%`;
-            if(document.getElementById('statsNumbers')) document.getElementById('statsNumbers').textContent = `${c}/${tasks.length} tasks`;
-
-            const totalMins = completed.reduce((sum, task) => sum + (task.time || 0), 0);
-            if(document.getElementById('totalMinutes')) {
-                document.getElementById('totalMinutes').textContent = `${totalMins}m`; document.getElementById('totalCompleted').textContent = `${c}`;
-                let level = "Analyst"; let color = "#71717a"; 
-                if(totalMins >= 60)  { level = "Associate"; color = "#2563eb"; } 
-                if(totalMins >= 300) { level = "Manager"; color = "#8b5cf6"; } 
-                if(totalMins >= 1000) { level = "Executive"; color = "#f59e0b"; } 
-                if(document.getElementById('userLevel')) { document.getElementById('userLevel').innerHTML = level; document.getElementById('userLevel').style.color = color; }
-            }
-        },
+      updateStats:
         render: () => {
             const g = { bandeja: document.getElementById('tasksGrid'), later: document.getElementById('column-later'), week: document.getElementById('column-week'), today: document.getElementById('column-today'), history: document.getElementById('historyList'), folder: document.getElementById('folderTasksGrid') };
             Object.values(g).forEach(el => { if(el) el.innerHTML = ''; }); 
