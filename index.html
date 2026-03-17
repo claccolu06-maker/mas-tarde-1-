@@ -3,287 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart-Time Hub | Team A</title>
+    <title>Smart-Time | Workspace</title>
     
-    <!-- PWA (App Instalable) -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f172a">
-    <!-- Truco para usar un Emoji como icono de pestaña y quitar el error favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏳</text></svg>">
-    
-    <!-- ICONO LOCAL (Asegúrate de tener icon.png en tu carpeta) -->
+    <meta name="theme-color" content="#09090b">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
     <link rel="apple-touch-icon" href="./icon.png">
     
-    <!-- Librerías Externas (Gráficos y Confeti) -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
-    <!-- Estilos -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- ================= PANTALLA DE LOGIN ================= -->
     <div id="loginScreen" class="login-screen">
         <div class="login-card glass-panel">
             <div class="logo">
-                <h1 class="neon-text">Smart-Time <span>Hub</span></h1>
+                <h1>Smart-Time Workspace</h1>
             </div>
-            <p>El noble arte de dejar las cosas para mañana... ¡Enfréntalo hoy!</p>
-            <button id="googleLoginBtn" class="cta-button google-btn">
-                🚀 Continuar con Google
+            <p>Task management and productivity tracking.</p>
+            <button id="googleLoginBtn" class="google-btn">
+                Continue with Google
             </button>
         </div>
     </div>
 
-    <!-- ================= DASHBOARD PRINCIPAL ================= -->
     <div id="mainDashboard" class="dashboard-layout hidden">
         
-        <!-- MENÚ LATERAL -->
-        <aside class="sidebar glass-panel">
+        <aside class="sidebar">
             <div class="logo">
-                <h2 class="neon-text" style="font-size: 1.5rem; margin-bottom: 20px;">Smart-Time</h2>
+                <h2>Smart-Time</h2>
             </div>
             <nav class="nav-menu">
-                <button class="nav-btn active" onclick="App.switchTab('bandeja', this)">📥 Bandeja</button>
-                <button class="nav-btn" onclick="App.switchTab('pizarra', this)">📋 Mi Pizarra</button>
-                <button class="nav-btn" onclick="App.switchTab('historial', this)">📊 Historial</button>
-                <button class="nav-btn" onclick="App.switchTab('ajustes', this)">⚙️ Ajustes</button>
+                <button class="nav-btn active" onclick="App.switchTab('bandeja', this)">Inbox</button>
+                <button class="nav-btn" onclick="App.switchTab('pizarra', this)">Board</button>
+                <button class="nav-btn" onclick="App.switchTab('historial', this)">Analytics</button>
+                <button class="nav-btn" onclick="App.switchTab('ajustes', this)">Settings</button>
                 
-                <!-- NUEVO: SECCIÓN DE CARPETAS -->
                 <div class="sidebar-divider"></div>
-                <h3 class="sidebar-title">📁 Mis Carpetas</h3>
-                <div id="folderList" class="folder-list">
-                    <!-- Las carpetas se inyectan desde JS -->
-                </div>
-                <button class="nav-btn add-folder-btn" onclick="App.addFolder()">+ Nueva Carpeta</button>
+                <h3 class="sidebar-title">Projects</h3>
+                <div id="folderList" class="folder-list"></div>
+                <button class="nav-btn add-folder-btn" onclick="App.addFolder()">+ New Project</button>
             </nav>
             
             <div class="sidebar-footer">
-                <button id="themeToggle" class="theme-btn" onclick="App.toggleTheme()">☀️ Modo Claro</button>
-                <button onclick="App.logout()" class="nav-btn" style="margin-top: 10px; color: var(--danger-red);">🚪 Salir</button>
+                <button id="themeToggle" class="nav-btn" onclick="App.toggleTheme()" style="text-align: center; border: 1px solid var(--border-color);">Toggle Theme</button>
+                <button onclick="App.logout()" class="nav-btn" style="text-align: center; color: var(--danger-red);">Sign Out</button>
             </div>
         </aside>
 
-        <!-- ÁREA DE CONTENIDO -->
         <main class="main-content">
             
-            <!-- PESTAÑA 1: BANDEJA -->
             <section id="tab-bandeja" class="tab-content active">
-                <header class="tab-header"><h2>Bandeja de Entrada</h2></header>
+                <header class="tab-header"><h2>Inbox</h2><p>Capture tasks and process them later.</p></header>
                 
                 <div class="stats-container glass-panel">
-                    <div class="stats-text"><span id="statsMessage">¡Vamos por el día!</span><span id="statsNumbers">0/0 completadas</span></div>
+                    <div class="stats-text"><span id="statsMessage">Daily Progress</span><span id="statsNumbers">0/0 completed</span></div>
                     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
                 </div>
 
-                <!-- FORMULARIO ACTUALIZADO (Con Carpetas y Hábitos) -->
                 <form id="taskForm" class="task-form glass-panel">
-                    <div class="input-group full-width">
-                        <input type="url" id="urlInput" placeholder="URL (opcional)" aria-label="Añadir URL opcional">
+                    <div style="margin-bottom: 1rem;">
+                        <input type="url" id="urlInput" placeholder="Resource URL (Optional)" aria-label="URL">
                     </div>
                     
-                    <div style="display: flex; gap: 10px; margin-top: 10px; width: 100%; flex-wrap: wrap;">
-                        <input type="text" id="titleInput" placeholder="¿De qué trata?" required style="flex: 2; min-width: 150px;" aria-label="Título de la tarea">
+                    <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
+                        <input type="text" id="titleInput" placeholder="Task description" required style="flex: 2; min-width: 150px;">
                         
-                        <select id="categoryInput" style="flex: 1; min-width: 100px;" aria-label="Categoría de la tarea">
-                            <option value="video">🎥 Video</option>
-                            <option value="articulo">📝 Artículo</option>
-                            <option value="curso">🎓 Curso</option>
-                            <option value="proyecto">🚀 Proyecto</option>
+                        <select id="categoryInput" style="flex: 1; min-width: 100px;">
+                            <option value="video">Video</option>
+                            <option value="articulo">Article</option>
+                            <option value="curso">Course</option>
+                            <option value="proyecto">Project</option>
                         </select>
                         
-                        <!-- NUEVO: SELECTOR DE CARPETA -->
-                        <select id="folderInput" style="flex: 1; min-width: 100px;" aria-label="Elegir Carpeta">
-                            <option value="General">📁 General</option>
+                        <select id="folderInput" style="flex: 1; min-width: 100px;">
+                            <option value="General">General</option>
                         </select>
                         
-                        <select id="energyInput" style="flex: 1; min-width: 100px;" aria-label="Nivel de energía">
-                            <option value="alta">⚡ Alta Energía</option>
-                            <option value="media" selected>🔋 Energía Media</option>
-                            <option value="baja">🪫 Baja Energía</option>
+                        <select id="energyInput" style="flex: 1; min-width: 100px;">
+                            <option value="alta">High Energy</option>
+                            <option value="media" selected>Normal</option>
+                            <option value="baja">Low Energy</option>
                         </select>
 
-                        <input type="number" id="timeInput" placeholder="Min" min="1" required style="flex: 1; min-width: 70px;" aria-label="Minutos necesarios">
+                        <input type="number" id="timeInput" placeholder="Min" min="1" required style="flex: 1; max-width: 80px;">
                     </div>
 
-                    <!-- NUEVO: CASILLA DE HÁBITO -->
                     <div class="habit-toggle">
                         <input type="checkbox" id="habitInput">
-                        <label for="habitInput">🔁 Repetir todos los días (Crear Hábito)</label>
+                        <label for="habitInput">Set as daily routine</label>
                     </div>
 
-                    <button type="submit" class="cta-button" style="margin-top: 15px;">Guardar Tarea ✨</button>
+                    <button type="submit" class="cta-button" style="margin-top: 1.5rem;">Save Task</button>
                 </form>
 
-                <!-- FILTROS MÁGICOS -->
                 <div class="magic-filter glass-panel">
-                    <div style="width: 100%;">
-                        <label for="timeFilter">⏱️ ¿Cuánto tiempo libre tienes?</label>
-                        <div class="filter-controls" style="margin-top: 5px;">
-                            <input type="number" id="timeFilter" placeholder="Ej. 15 min" min="1" aria-label="Filtrar por tiempo">
-                            <button id="clearFilter" class="btn-icon btn-link hidden">✖ Limpiar</button>
+                    <div style="width: 100%; margin-bottom: 1rem;">
+                        <label style="font-size: 0.85rem; font-weight: 500;">Available time (min)</label>
+                        <div style="margin-top: 5px; display: flex; gap: 10px;">
+                            <input type="number" id="timeFilter" placeholder="e.g. 15" min="1" style="max-width: 150px;">
                         </div>
                     </div>
                     
-                    <div style="width: 100%; margin-top: 15px;">
-                        <label>🔋 ¿Cómo está tu energía ahora mismo?</label>
+                    <div style="width: 100%;">
+                        <label style="font-size: 0.85rem; font-weight: 500;">Current Energy Level</label>
                         <div class="energy-filters">
-                            <button class="btn-energy active" onclick="App.setEnergyFilter('all', this)">Todas</button>
-                            <button class="btn-energy" onclick="App.setEnergyFilter('alta', this)">⚡ Alta</button>
-                            <button class="btn-energy" onclick="App.setEnergyFilter('media', this)">🔋 Media</button>
-                            <button class="btn-energy" onclick="App.setEnergyFilter('baja', this)">🪫 Baja</button>
+                            <button class="btn-energy active" onclick="App.setEnergyFilter('all', this)">All</button>
+                            <button class="btn-energy" onclick="App.setEnergyFilter('alta', this)">High</button>
+                            <button class="btn-energy" onclick="App.setEnergyFilter('media', this)">Normal</button>
+                            <button class="btn-energy" onclick="App.setEnergyFilter('baja', this)">Low</button>
                         </div>
                     </div>
                 </div>
 
                 <div id="emptyState" class="empty-state hidden glass-panel">
-                    <div class="empty-icon">🌱</div>
-                    <h3>Bandeja vacía.</h3>
-                    <p>Guarda algo para después.</p>
+                    <h3>Inbox is empty</h3>
+                    <p>Add a task to get started.</p>
                 </div>
 
                 <div id="tasksGrid" class="tasks-grid"></div>
             </section>
 
-            <!-- PESTAÑA 2: PIZARRA KANBAN -->
             <section id="tab-pizarra" class="tab-content hidden">
-                <header class="tab-header"><h2>📋 Mi Pizarra</h2></header>
+                <header class="tab-header"><h2>Board</h2><p>Organize and execute.</p></header>
                 
-                <div class="ai-coach-section glass-panel" style="margin-bottom: 20px;">
-                    <button id="askAIBtn" class="cta-button ai-btn" onclick="App.askGemini()" style="width:100%; background: linear-gradient(45deg, #a855f7, #ec4899);">
-                        ✨ Que la IA organice mi semana
+                <div class="ai-coach-section glass-panel">
+                    <button id="askAIBtn" class="cta-button" onclick="App.askGemini()" style="width: 100%; background: var(--text-main); color: var(--bg-main);">
+                        Analyze my schedule
                     </button>
                     <div id="aiResponseCard" class="ai-response-card hidden">
-                        <div class="ai-header">🤖 Tu Entrenador Sarcástico:</div>
-                        <p id="aiResponseText">Pensando...</p>
+                        <div style="font-weight: 600; margin-bottom: 0.5rem;">Executive Assistant:</div>
+                        <p id="aiResponseText">Processing data...</p>
                     </div>
                 </div>
                 
                 <div class="kanban-board">
-                    <div class="kanban-column glass-panel" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'later')">
-                        <h3 class="column-title" style="color: var(--cat-video);">⏳ Algún día</h3>
+                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'later')">
+                        <h3 class="column-title">Backlog</h3>
                         <div class="kanban-cards" id="column-later"></div>
                     </div>
-                    <div class="kanban-column glass-panel" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'week')">
-                        <h3 class="column-title" style="color: var(--cat-proyecto);">📅 Esta Semana</h3>
+                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'week')">
+                        <h3 class="column-title">This Week</h3>
                         <div class="kanban-cards" id="column-week"></div>
                     </div>
-                    <div class="kanban-column glass-panel active-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'today')">
-                        <h3 class="column-title" style="color: var(--danger-red);">🔥 Hacer HOY</h3>
+                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'today')">
+                        <h3 class="column-title" style="color: var(--text-main);">Today</h3>
                         <div class="kanban-cards" id="column-today"></div>
                     </div>
                 </div>
             </section>
 
-            <!-- PESTAÑA 3: HISTORIAL & RPG -->
             <section id="tab-historial" class="tab-content hidden">
-                <header class="tab-header">
-                    <h2>📊 Tu Progreso</h2>
-                    <p class="subtitle">Cada minuto cuenta. Sube de nivel completando tareas.</p>
-                </header>
-
-                <div class="metrics-grid" style="margin-bottom: 20px;">
-                    <div class="metric-card glass-panel">
-                        <h4>Nivel Actual</h4>
-                        <div id="userLevel" class="metric-value">Novato 🌱</div>
-                    </div>
-                    <div class="metric-card glass-panel">
-                        <h4>Tiempo Invertido</h4>
-                        <div id="totalMinutes" class="metric-value" style="color: var(--accent-blue);">0 min</div>
-                    </div>
-                    <div class="metric-card glass-panel">
-                        <h4>Misiones Superadas</h4>
-                        <div id="totalCompleted" class="metric-value" style="color: var(--cta-green);">0</div>
-                    </div>
+                <header class="tab-header"><h2>Analytics</h2><p>Performance metrics and history.</p></header>
+                <div class="metrics-grid">
+                    <div class="metric-card glass-panel"><h4>Current Rank</h4><div id="userLevel" class="metric-value">Analyst</div></div>
+                    <div class="metric-card glass-panel"><h4>Time Invested</h4><div id="totalMinutes" class="metric-value">0m</div></div>
+                    <div class="metric-card glass-panel"><h4>Tasks Completed</h4><div id="totalCompleted" class="metric-value">0</div></div>
                 </div>
-
                 <div class="stats-grid">
-                    <div class="chart-container glass-panel">
-                        <h3>Distribución de Tareas</h3>
-                        <div style="height: 250px; margin-top: 10px;"><canvas id="statsChart"></canvas></div>
+                    <div class="glass-panel" style="padding: 1.5rem;">
+                        <h3 style="font-size: 1rem; margin-bottom: 1rem;">Task Distribution</h3>
+                        <div style="height: 250px;"><canvas id="statsChart"></canvas></div>
                     </div>
-                    <div class="history-list-container glass-panel">
-                        <h3>Registro de Victorias 🏆</h3>
+                    <div class="glass-panel" style="padding: 1.5rem;">
+                        <h3 style="font-size: 1rem; margin-bottom: 1rem;">Activity Log</h3>
                         <div id="historyList" class="history-list"></div>
                     </div>
                 </div>
             </section>
 
-            <!-- PESTAÑA 4: AJUSTES -->
             <section id="tab-ajustes" class="tab-content hidden">
-                <header class="tab-header"><h2>⚙️ Ajustes del Sistema</h2></header>
+                <header class="tab-header"><h2>Settings</h2><p>Manage your workspace.</p></header>
                 <div class="settings-grid">
-                    
                     <div class="settings-card glass-panel profile-card">
                         <div class="profile-header">
-                            <img id="userPhoto" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Perfil" class="profile-img">
+                            <img id="userPhoto" src="" alt="Profile" class="profile-img">
                             <div class="profile-info">
-                                <h3 id="userName">Cargando...</h3>
-                                <p id="userEmail">cargando@correo.com</p>
-                                <span class="badge">Cuenta Sincronizada ☁️</span>
+                                <h3 id="userName">Loading...</h3>
+                                <p id="userEmail">user@domain.com</p>
                             </div>
                         </div>
                     </div>
-
                     <div class="settings-card glass-panel">
-                        <h3>💾 Copia de Seguridad</h3>
-                        <p>Descarga un archivo JSON con todas tus tareas.</p>
-                        <button class="cta-button" onclick="App.exportData()" style="background: var(--accent-blue);">⬇️ Descargar Mis Datos</button>
+                        <h3>AI Integration</h3>
+                        <p>Provide your Groq API key to enable the Executive Assistant.</p>
+                        <input type="password" id="apiKeyInput" placeholder="API Key">
+                        <button class="cta-button" onclick="App.saveApiKey()" style="margin-top: 10px;">Save Configuration</button>
                     </div>
-
                     <div class="settings-card glass-panel danger-zone">
-                        <h3>⚠️ Zona de Peligro</h3>
-                        <p>Borra absolutamente todas las tareas, carpetas y el historial en la nube.</p>
-                        <button class="cta-button danger" onclick="App.clearAllData()">🗑️ Formatear Sistema</button>
+                        <h3 style="color: var(--danger-red);">Data Management</h3>
+                        <p>Export your data or format the entire workspace.</p>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="cta-button" onclick="App.exportData()">Export JSON</button>
+                            <button class="cta-button danger" onclick="App.clearAllData()">Format Database</button>
+                        </div>
                     </div>
                 </div>
             </section>
 
-                                <!-- NUEVO: CONFIGURACIÓN IA (GROQ) -->
-                    <div class="settings-card glass-panel" style="border-color: #a855f7;">
-                        <h3 style="color: #a855f7;">🧠 Cerebro IA (Groq / Llama 3)</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">Tu coach personal súper rápido. Tu llave se guarda localmente por seguridad.</p>
-                        <input type="password" id="apiKeyInput" placeholder="Pega tu API Key de Groq aquí..." style="margin-bottom: 10px; border-color: #a855f7;">
-                        <button class="cta-button" onclick="App.saveApiKey()" style="width: 100%; background: linear-gradient(45deg, #a855f7, #ec4899);">💾 Guardar Llave API</button>
-                        <a href="https://console.groq.com/keys" target="_blank" style="display: block; margin-top: 10px; font-size: 0.8rem; color: var(--accent-blue); text-align: center;">Consigue tu Llave 100% GRATIS aquí</a>
-                    </div>
-            
-            <!-- PESTAÑA 5: VISTA DE CARPETA ESPECÍFICA (NUEVO) -->
             <section id="tab-carpetas" class="tab-content hidden">
-                <header class="tab-header">
-                    <h2 id="currentFolderName" class="neon-text">📁 General</h2>
-                    <p class="subtitle" style="color: var(--text-muted); margin-top: 5px;">Todo lo que has guardado en esta categoría.</p>
-                </header>
-                
-                <div id="folderTasksGrid" class="tasks-grid">
-                    <!-- Aquí se inyectan las tareas de la carpeta seleccionada -->
-                </div>
+                <header class="tab-header"><h2 id="currentFolderName">General</h2><p>Tasks assigned to this project.</p></header>
+                <div id="folderTasksGrid" class="tasks-grid"></div>
             </section>
-
         </main>
     </div>
 
-    <!-- ================= MODO FOCUS ================= -->
-        <!-- ================= MODO FOCUS ================= -->
     <div id="focusOverlay" class="focus-overlay hidden">
-        <div class="focus-content glass-panel" style="background: rgba(15, 23, 42, 0.95); padding: 3rem; border-radius: 24px; border: 1px solid var(--accent-blue);">
-            <span class="focus-badge">MODO ZEN ACTIVADO 🧘‍♂️</span>
-            <h2 id="focusTitle" class="neon-text" style="font-size: 2.5rem; margin: 20px 0;">Tarea</h2>
+        <div class="focus-content">
+            <span class="focus-badge">FOCUS SESSION</span>
+            <h2 id="focusTitle" style="font-size: 2rem; margin: 1rem 0;">Task</h2>
             <div id="focusTimer" class="timer-display">00:00</div>
-            
-            <!-- NUEVO: BOTÓN DE ENLACE -->
-            <a id="focusUrlBtn" href="#" target="_blank" class="cta-button" style="display: none; background: var(--cta-green); text-decoration: none; margin: 10px auto 20px auto; width: fit-content; padding: 10px 20px;">
-                🔗 Abrir material de la tarea
-            </a>
+            <a id="focusUrlBtn" href="#" target="_blank" class="cta-button" style="display: none; margin: 0 auto 2rem auto; width: fit-content;">Open Material</a>
             <br>
-            <button id="exitFocus" class="cta-button danger" style="margin-top: 10px;">Abandonar Sesión</button>
+            <button id="exitFocus" class="cta-button danger">End Session</button>
         </div>
     </div>
-    <!-- TOASTS -->
+
     <div id="toast-container"></div>
-    
     <script type="module" src="app.js"></script>
 </body>
 </html>
