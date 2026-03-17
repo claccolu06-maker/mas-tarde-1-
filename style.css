@@ -159,3 +159,59 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+/* =========================================================
+   MOBILE RESPONSIVENESS (Native App Feel)
+========================================================= */
+@media (max-width: 768px) {
+    /* El layout pasa a ser vertical */
+    .dashboard-layout { flex-direction: column; }
+    
+    /* El Menú Lateral se convierte en un Top Nav deslizable */
+    .sidebar { width: 100%; padding: 1rem; border-right: none; border-bottom: 1px solid var(--border-color); }
+    .logo h2 { margin-bottom: 1rem; font-size: 1.1rem; text-align: center; }
+    
+    .nav-menu { 
+        flex-direction: row; 
+        overflow-x: auto; 
+        gap: 0.5rem; 
+        padding-bottom: 0.5rem; 
+        /* Scroll suave táctil y ocultar barra de scroll */
+        -webkit-overflow-scrolling: touch; 
+        scrollbar-width: none; 
+    }
+    .nav-menu::-webkit-scrollbar { display: none; }
+    
+    .nav-btn { white-space: nowrap; font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 20px; }
+    .nav-btn.active { border-left: none; border-bottom: 2px solid var(--text-main); border-radius: 20px; }
+    
+    /* Ocultamos elementos secundarios en el menú superior para ahorrar espacio */
+    .sidebar-divider, .sidebar-title { display: none; }
+    .folder-list { flex-direction: row; max-height: none; }
+    .folder-item { display: inline-flex; }
+    .sidebar-footer { display: none; /* Movemos el logout a ajustes en el futuro si es necesario */ }
+
+    /* Área de Contenido */
+    .main-content { padding: 1.5rem 1rem; overflow-x: hidden; }
+    .tab-header { margin-bottom: 1.5rem; }
+    
+    /* Kanban tipo Trello (Swipe horizontal) */
+    .kanban-board { 
+        flex-direction: row; 
+        overflow-x: auto; 
+        scroll-snap-type: x mandatory; 
+        padding-bottom: 1rem; 
+        margin: 0 -1rem; /* Rompe el padding para deslizar de borde a borde */
+        padding: 0 1rem;
+    }
+    .kanban-column { 
+        min-width: 85vw; /* Ocupa casi toda la pantalla */
+        scroll-snap-align: center; 
+    }
+    
+    /* Ajustes de Cuadrículas y Fuentes */
+    .tasks-grid, .stats-grid { grid-template-columns: 1fr; gap: 1rem; }
+    .metrics-grid { grid-template-columns: 1fr 1fr; }
+    .focus-content { padding: 2rem 1rem; }
+    .timer-display { font-size: 4.5rem; }
+    .card-actions { flex-wrap: wrap; gap: 10px; }
+}
