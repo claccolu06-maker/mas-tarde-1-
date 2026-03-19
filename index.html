@@ -119,12 +119,9 @@
                     </div>
                 </div>
 
-                <!-- 🔥 NUEVO: PANEL FIJO DE RUTINAS -->
                 <div id="habitsPanel" class="glass-panel" style="margin-bottom: 2rem; padding: 1.5rem;">
                     <h3 style="font-size: 1rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);" data-i18n="habits_title">Rutinas de Hoy</h3>
-                    <div id="habitsList" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <!-- Los hábitos se inyectan aquí -->
-                    </div>
+                    <div id="habitsList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
                 </div>
                 
                 <div class="kanban-board">
@@ -148,6 +145,12 @@
                     <div class="metric-card glass-panel"><h4 data-i18n="stat_done">Completadas</h4><div id="totalCompleted" class="metric-value">0</div></div>
                 </div>
                 <div class="stats-grid">
+                    <!-- 🔥 NUEVO: HEATMAP DE CONSTANCIA -->
+                    <div class="glass-panel" style="padding: 1.5rem; grid-column: 1 / -1;">
+                        <h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_heatmap">Mapa de Constancia (Últimas 12 semanas)</h3>
+                        <div id="heatmapContainer" class="heatmap-grid"></div>
+                    </div>
+
                     <div class="glass-panel" style="padding: 1.5rem;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_dist">Distribución</h3><div style="height: 250px;"><canvas id="statsChart"></canvas></div></div>
                     <div class="glass-panel" style="padding: 1.5rem;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_log">Registro de Actividad</h3><div id="historyList" class="history-list"></div></div>
                 </div>
