@@ -275,3 +275,32 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 
 [data-theme="dark"] .kanban-card.habit-done { background: rgba(255, 255, 255, 0.02); }
 .kanban-card.habit-done h4 { text-decoration: line-through; color: var(--text-muted); }
 .kanban-card.habit-done .btn-play, .kanban-card.habit-done .btn-edit { display: none; /* Ocultamos jugar y editar si ya está hecho */ }
+/* --- SELECTORES DE DÍAS (Frecuencia Semanal) --- */
+.days-selector {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.days-selector label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: 0.2s;
+    user-select: none;
+}
+.days-selector input[type="checkbox"] { display: none; /* Ocultamos el cuadrito feo */ }
+.days-selector label:has(input:checked) {
+    background: var(--text-main);
+    color: var(--bg-main);
+    border-color: var(--text-main);
+}
