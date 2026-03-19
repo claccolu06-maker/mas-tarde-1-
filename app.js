@@ -6,7 +6,6 @@ const firebaseConfig = { apiKey: "AIzaSyCz45FGoqkYt9BS4J1_UjkBu6gSTHp0QOU", auth
 const appFirebase = initializeApp(firebaseConfig); const auth = getAuth(appFirebase); const db = getDatabase(appFirebase); const provider = new GoogleAuthProvider();
 let currentUser = null;
 
-// --- DICCIONARIO BILINGÜE ---
 const dict = {
     es: {
         nav_inbox: "Bandeja", nav_board: "Pizarra", nav_analytics: "Analítica", nav_settings: "Ajustes", nav_projects: "PROYECTOS", btn_new_proj: "+ Nuevo Proyecto",
@@ -20,7 +19,7 @@ const dict = {
         btn_save_key: "Guardar Configuración", set_data: "Gestión de Datos", set_data_sub: "Exporta tus datos o formatea el sistema.", btn_format: "Formatear BD",
         proj_sub: "Tareas asignadas a este proyecto.", focus_badge: "SESIÓN DE ENFOQUE", btn_material: "Abrir Material", btn_end_focus: "Finalizar Sesión",
         edit_title: "Editar Tarea", edit_name: "Nombre de la tarea", edit_time: "Tiempo (min)", edit_energy: "Energía", btn_cancel: "Cancelar", btn_save_changes: "Guardar Cambios",
-        // Textos JS
+        habits_title: "Rutinas de Hoy", habits_empty: "No hay rutinas programadas para hoy.",
         js_exec: "Ejecutar", js_edit: "Editar", js_comp: "Completar", js_del: "Borrar", js_undo: "Deshacer", js_tasks: "tareas",
         js_rank1: "Analista", js_rank2: "Asociado", js_rank3: "Mánager", js_rank4: "Ejecutivo", js_streak: "Racha",
         js_opt1: "Bandeja", js_opt2: "Algún día", js_opt3: "Esta Semana", js_opt4: "Hacer Hoy"
@@ -37,6 +36,7 @@ const dict = {
         btn_save_key: "Save Configuration", set_data: "Data Management", set_data_sub: "Export or format your database.", btn_format: "Format Database",
         proj_sub: "Tasks assigned to this project.", focus_badge: "FOCUS SESSION", btn_material: "Open Material", btn_end_focus: "End Session",
         edit_title: "Edit Task", edit_name: "Task Name", edit_time: "Time (min)", edit_energy: "Energy", btn_cancel: "Cancel", btn_save_changes: "Save Changes",
+        habits_title: "Today's Routines", habits_empty: "No routines scheduled for today.",
         js_exec: "Execute", js_edit: "Edit", js_comp: "Complete", js_del: "Delete", js_undo: "Undo", js_tasks: "tasks",
         js_rank1: "Analyst", js_rank2: "Associate", js_rank3: "Manager", js_rank4: "Executive", js_streak: "Streak",
         js_opt1: "Inbox", js_opt2: "Backlog", js_opt3: "This Week", js_opt4: "Today"
@@ -49,45 +49,22 @@ const App = (() => {
     let lang = localStorage.getItem('smartLang') || 'es';
 
     const t = (key) => dict[lang][key] || key;
-
-    const applyTranslations = () => {
-        document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
-        document.getElementById('langBtn').textContent = lang === 'es' ? '🇬🇧 English' : '🇪🇸 Español';
-        UI.updateStats(); UI.render();
-    };
-
+    const applyTranslations = () => { document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); }); document.getElementById('langBtn').textContent = lang === 'es' ? '🇬🇧 English' : '🇪🇸 Español'; UI.updateStats(); UI.render(); };
     const toggleLanguage = () => { lang = lang === 'es' ? 'en' : 'es'; localStorage.setItem('smartLang', lang); applyTranslations(); };
-
     const showToast = (msg) => { const c = document.getElementById('toast-container'); if(!c) return; const toast = document.createElement('div'); toast.className = 'toast'; toast.textContent = msg; c.appendChild(toast); setTimeout(() => toast.remove(), 3000); };
     
-    // --- LÓGICA DE DÍAS Y RUTINAS AVANZADAS ---
     const getLocalDate = (offsetDays = 0) => { const d = new Date(); d.setDate(d.getDate() + offsetDays); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
     
     const checkDailyHabits = () => {
-        const todayStr = getLocalDate(0); 
-        const todayDate = new Date();
-        const currentDayNum = todayDate.getDay().toString(); // 0 = Dom, 1 = Lun...
-        let needsSave = false;
-
+        const todayStr = getLocalDate(0); const currentDayNum = new Date().getDay().toString(); let needsSave = false;
         tasks.forEach(task => {
             if (task.completed && task.freq && task.freq !== 'once') {
-                // Si es un hábito recurrente, comprobamos si debe "revivir" hoy
                 let shouldRevive = false;
-                
-                if (task.freq === 'daily' && task.lastCompletedDate !== todayStr) {
-                    shouldRevive = true;
-                } else if (task.freq === 'weekly' && task.days) {
-                    // Si hoy es uno de los días marcados y no se ha completado hoy
-                    if (task.days.includes(currentDayNum) && task.lastCompletedDate !== todayStr) {
-                        shouldRevive = true;
-                    }
-                }
+                if (task.freq === 'daily' && task.lastCompletedDate !== todayStr) shouldRevive = true;
+                else if (task.freq === 'weekly' && task.days && task.days.includes(currentDayNum) && task.lastCompletedDate !== todayStr) shouldRevive = true;
 
                 if (shouldRevive) {
-                    task.completed = false; 
-                    task.status = 'today'; 
-                    needsSave = true;
-                    // Lógica simple de racha (si se saltó ayer y ayer le tocaba... pierde racha)
+                    task.completed = false; task.status = 'today'; needsSave = true;
                     const yesterdayStr = getLocalDate(-1);
                     if (task.lastCompletedDate !== yesterdayStr && task.lastCompletedDate) task.streak = 0;
                 }
@@ -96,12 +73,7 @@ const App = (() => {
         if (needsSave) Storage.saveTasks();
     };
 
-    const toggleDaysSelector = (mode) => {
-        const sel = document.getElementById(mode === 'new' ? 'freqInput' : 'editFreqInput');
-        const daysDiv = document.getElementById(mode === 'new' ? 'daysSelector_new' : 'daysSelector_edit');
-        if (sel.value === 'weekly') { daysDiv.classList.remove('hidden'); } 
-        else { daysDiv.classList.add('hidden'); }
-    };
+    const toggleDaysSelector = (mode) => { const sel = document.getElementById(mode === 'new' ? 'freqInput' : 'editFreqInput'); const daysDiv = document.getElementById(mode === 'new' ? 'daysSelector_new' : 'daysSelector_edit'); if (sel.value === 'weekly') { daysDiv.classList.remove('hidden'); } else { daysDiv.classList.add('hidden'); } };
 
     const Storage = {
         saveTasks: () => { if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/tasks'), tasks); },
@@ -122,7 +94,6 @@ const App = (() => {
     const checkSharedLinks = () => { const urlParams = new URLSearchParams(window.location.search); const t = urlParams.get('title') || urlParams.get('text'); const u = urlParams.get('url'); if (t || u) { if (document.getElementById('titleInput')) document.getElementById('titleInput').value = t || ''; if (document.getElementById('urlInput')) document.getElementById('urlInput').value = u || ''; window.history.replaceState({}, document.title, window.location.pathname); showToast("Link captured."); } };
     const dragStart = (e, id) => { draggedTaskId = id; e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', id); }; const allowDrop = (e) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.add('drag-over'); }; const dragLeave = (e) => { const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); }; const drop = (e, status) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); if(draggedTaskId) { moveTask(draggedTaskId, status); draggedTaskId = null; } };
     
-    // --- CREAR NUEVA TAREA (Con Días Específicos) ---
     const addTask = (e) => {
         e.preventDefault(); 
         const energyVal = document.getElementById('energyInput') ? document.getElementById('energyInput').value : 'media'; 
@@ -143,56 +114,40 @@ const App = (() => {
         Storage.saveTasks(); document.getElementById('taskForm').reset(); document.getElementById('folderInput').value = folderVal; toggleDaysSelector('new'); showToast(lang === 'es' ? "Guardado" : "Saved");
     };
 
-    // --- MODAL DE EDICIÓN ---
     const editTask = (id) => { 
         const task = tasks.find(t => t.id === id); if (!task) return; 
-        
-        document.getElementById('editTaskId').value = task.id;
-        document.getElementById('editTitleInput').value = task.title;
-        document.getElementById('editTimeInput').value = task.time;
-        document.getElementById('editEnergyInput').value = task.energy || 'media';
-        
-        const freqSel = document.getElementById('editFreqInput');
-        freqSel.value = task.freq || 'once';
-        toggleDaysSelector('edit');
-
-        // Limpiar checks previos
+        document.getElementById('editTaskId').value = task.id; document.getElementById('editTitleInput').value = task.title; document.getElementById('editTimeInput').value = task.time; document.getElementById('editEnergyInput').value = task.energy || 'media';
+        const freqSel = document.getElementById('editFreqInput'); freqSel.value = task.freq || 'once'; toggleDaysSelector('edit');
         document.querySelectorAll('.edit-day-cb').forEach(cb => cb.checked = false);
-        if (task.freq === 'weekly' && task.days) {
-            document.querySelectorAll('.edit-day-cb').forEach(cb => {
-                if(task.days.includes(cb.value)) cb.checked = true;
-            });
-        }
-        
+        if (task.freq === 'weekly' && task.days) { document.querySelectorAll('.edit-day-cb').forEach(cb => { if(task.days.includes(cb.value)) cb.checked = true; }); }
         document.getElementById('editModal').classList.remove('hidden');
     };
 
     const closeEditModal = () => { document.getElementById('editModal').classList.add('hidden'); };
 
     const saveEditedTask = () => {
-        const id = document.getElementById('editTaskId').value;
-        const task = tasks.find(t => t.id === id); if (!task) return; 
-        
-        const newTitle = document.getElementById('editTitleInput').value;
-        const newTime = parseInt(document.getElementById('editTimeInput').value);
-        const newEnergy = document.getElementById('editEnergyInput').value;
-        const newFreq = document.getElementById('editFreqInput').value;
-        
+        const id = document.getElementById('editTaskId').value; const task = tasks.find(t => t.id === id); if (!task) return; 
+        const newTitle = document.getElementById('editTitleInput').value; const newTime = parseInt(document.getElementById('editTimeInput').value); const newEnergy = document.getElementById('editEnergyInput').value; const newFreq = document.getElementById('editFreqInput').value;
         if (!newTitle || isNaN(newTime) || newTime <= 0) { alert(lang==='es'?"Datos inválidos.":"Invalid data."); return; }
-        
         let selectedDays = [];
-        if (newFreq === 'weekly') {
-            document.querySelectorAll('.edit-day-cb:checked').forEach(cb => selectedDays.push(cb.value));
-            if (selectedDays.length === 0) { alert(lang==='es'?"Selecciona al menos un día.":"Select at least one day."); return; }
-        }
-
-        task.title = newTitle; task.time = newTime; task.energy = newEnergy;
-        task.freq = newFreq; task.days = selectedDays;
-        
+        if (newFreq === 'weekly') { document.querySelectorAll('.edit-day-cb:checked').forEach(cb => selectedDays.push(cb.value)); if (selectedDays.length === 0) { alert(lang==='es'?"Selecciona un día.":"Select a day."); return; } }
+        task.title = newTitle; task.time = newTime; task.energy = newEnergy; task.freq = newFreq; task.days = selectedDays;
         Storage.saveTasks(); UI.render(); closeEditModal(); showToast(lang==='es'?"Actualizada":"Updated");
     };
 
-    const toggleComplete = (id) => { const tk = tasks.find(x => x.id === id); if(tk) { tk.completed = !tk.completed; if(tk.completed) { if(tk.freq !== 'once') { const today = getLocalDate(0); if(tk.lastCompletedDate !== today) { tk.streak = (tk.streak || 0) + 1; tk.lastCompletedDate = today; } } } else { if(tk.freq !== 'once') { tk.streak = Math.max(0, (tk.streak || 0) - 1); tk.lastCompletedDate = null; } } Storage.saveTasks(); } };
+    const toggleComplete = (id) => { 
+        const tk = tasks.find(x => x.id === id); 
+        if(tk) { 
+            tk.completed = !tk.completed; 
+            if(tk.completed) { 
+                if(tk.freq !== 'once') { const today = getLocalDate(0); if(tk.lastCompletedDate !== today) { tk.streak = (tk.streak || 0) + 1; tk.lastCompletedDate = today; } } 
+                if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#38bdf8', '#10b981'] });
+            } 
+            else { if(tk.freq !== 'once') { tk.streak = Math.max(0, (tk.streak || 0) - 1); tk.lastCompletedDate = null; } } 
+            Storage.saveTasks(); 
+        } 
+    };
+
     const deleteTask = (id) => { if(confirm(lang==='es'?'¿Borrar tarea?':'Delete task?')) { tasks = tasks.filter(t => t.id !== id); Storage.saveTasks(); } };
     const moveTask = (id, newStatus) => { const tk = tasks.find(x => x.id === id); if(tk) { tk.status = newStatus; Storage.saveTasks(); } };
     
@@ -217,15 +172,14 @@ const App = (() => {
             }
         },
         render: () => {
-            const g = { bandeja: document.getElementById('tasksGrid'), later: document.getElementById('column-later'), week: document.getElementById('column-week'), today: document.getElementById('column-today'), history: document.getElementById('historyList'), folder: document.getElementById('folderTasksGrid') };
-            Object.values(g).forEach(el => { if(el) el.innerHTML = ''; }); let enBandeja = 0;
+            const g = { bandeja: document.getElementById('tasksGrid'), later: document.getElementById('column-later'), week: document.getElementById('column-week'), today: document.getElementById('column-today'), history: document.getElementById('historyList'), folder: document.getElementById('folderTasksGrid'), habits: document.getElementById('habitsList') };
+            Object.values(g).forEach(el => { if(el) el.innerHTML = ''; }); 
+            let enBandeja = 0; let hasHabitsToday = false;
+            const currentDayNum = new Date().getDay().toString();
 
             const createCardDOM = (task) => {
-                const isHabitDone = (task.freq && task.freq !== 'once') && task.completed;
                 let energyLabel = task.energy === "alta" ? "High" : (task.energy === "baja" ? "Low" : "Normal");
-                let freqLabel = task.freq === 'daily' ? 'Daily' : (task.freq === 'weekly' ? 'Weekly' : '');
-
-                const card = document.createElement('div'); card.className = `kanban-card ${isHabitDone ? 'habit-done' : ''}`; card.draggable = true; 
+                const card = document.createElement('div'); card.className = `kanban-card`; card.draggable = true; 
                 card.ondragstart = (e) => App.dragStart(e, task.id); card.ondragend = (e) => e.target.classList.remove('dragging');
 
                 card.innerHTML = `
@@ -233,16 +187,15 @@ const App = (() => {
                         <span class="pill ${task.category}">${task.category.toUpperCase()}</span>
                         <span style="color:var(--text-muted);">${task.time}m</span>
                         <span style="color:var(--accent-blue);">${task.folder || 'General'}</span>
-                        ${freqLabel ? `<span class="streak-badge">${freqLabel} | ${t('js_streak')}: ${task.streak || 0}</span>` : ''}
                     </div>
                     <h4>${task.title}</h4>
-                    <select style="margin:10px 0; width:100%;" onchange="App.moveTask('${task.id}', this.value)" ${isHabitDone ? 'disabled' : ''}>
+                    <select style="margin:10px 0; width:100%;" onchange="App.moveTask('${task.id}', this.value)">
                         <option value="bandeja" ${task.status === 'bandeja'?'selected':''}>${t('js_opt1')}</option><option value="later" ${task.status === 'later'?'selected':''}>${t('js_opt2')}</option><option value="week" ${task.status === 'week'?'selected':''}>${t('js_opt3')}</option><option value="today" ${task.status === 'today'?'selected':''}>${t('js_opt4')}</option>
                     </select>
                     <div class="card-actions">
                         <button class="btn-play" onclick="App.startFocus('${task.id}')">${t('js_exec')}</button>
                         <button class="btn-edit" onclick="App.editTask('${task.id}')">${t('js_edit')}</button>
-                        <button class="btn-complete" onclick="App.toggleComplete('${task.id}')" style="${isHabitDone ? 'color:var(--text-main); font-weight:bold; display:block;' : ''}">${isHabitDone ? t('js_undo') : t('js_comp')}</button>
+                        <button class="btn-complete" onclick="App.toggleComplete('${task.id}')">${t('js_comp')}</button>
                         <button class="btn-delete" onclick="App.deleteTask('${task.id}')">${t('js_del')}</button>
                     </div>`;
                 return card;
@@ -251,7 +204,35 @@ const App = (() => {
             tasks.forEach(task => {
                 if (currentEnergyFilter !== 'all' && task.energy !== currentEnergyFilter && !task.completed) return;
 
-                if (task.completed && (!task.freq || task.freq === 'once')) {
+                // --- SISTEMA DE HÁBITOS (PANEL SUPERIOR) ---
+                if (task.freq && task.freq !== 'once') {
+                    let isForToday = false;
+                    if (task.freq === 'daily') isForToday = true;
+                    if (task.freq === 'weekly' && task.days && task.days.includes(currentDayNum)) isForToday = true;
+
+                    if (isForToday) {
+                        hasHabitsToday = true;
+                        const isDone = task.completed;
+                        const habitEl = document.createElement('div');
+                        habitEl.className = `habit-item ${isDone ? 'done' : ''}`;
+                        habitEl.innerHTML = `
+                            <div class="habit-left">
+                                <input type="checkbox" class="habit-checkbox" ${isDone ? 'checked' : ''} onchange="App.toggleComplete('${task.id}')">
+                                <span class="habit-title">${task.title}</span>
+                                <span class="streak-badge">${t('js_streak')}: ${task.streak || 0}</span>
+                            </div>
+                            <div class="habit-actions">
+                                <button onclick="App.editTask('${task.id}')">${t('js_edit')}</button>
+                                <button onclick="App.deleteTask('${task.id}')">${t('js_del')}</button>
+                            </div>
+                        `;
+                        if(g.habits) g.habits.appendChild(habitEl);
+                    }
+                    return; // ¡Importante! Si es hábito, no lo pintamos en el Kanban.
+                }
+
+                // --- TAREAS NORMALES ---
+                if (task.completed) {
                     if(g.history) g.history.innerHTML += `
                         <div class="history-item">
                             <div style="display:flex; flex-direction:column;"><span style="text-decoration:line-through; color:var(--text-muted); font-weight:500;">${task.title}</span><span style="font-size:0.75rem; color:var(--cta-green);">+${task.time} min</span></div>
@@ -267,6 +248,8 @@ const App = (() => {
                 else if (task.status === 'today') { if(g.today) g.today.appendChild(card); }
                 if (task.folder === currentActiveFolder || (!task.folder && currentActiveFolder === 'General')) { const folderCard = createCardDOM(task); if(g.folder) g.folder.appendChild(folderCard); }
             });
+            
+            if (!hasHabitsToday && g.habits) { g.habits.innerHTML = `<p style="font-size:0.85rem; color:var(--text-muted);">${t('habits_empty')}</p>`; }
             if(document.getElementById('emptyState')) document.getElementById('emptyState').classList.toggle('hidden', enBandeja > 0);
             UI.updateStats();
         },
