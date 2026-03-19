@@ -6,6 +6,7 @@ const firebaseConfig = { apiKey: "AIzaSyCz45FGoqkYt9BS4J1_UjkBu6gSTHp0QOU", auth
 const appFirebase = initializeApp(firebaseConfig); const auth = getAuth(appFirebase); const db = getDatabase(appFirebase); const provider = new GoogleAuthProvider();
 let currentUser = null;
 
+// --- DICCIONARIO BILINGÜE ---
 const dict = {
     es: {
         nav_inbox: "Bandeja", nav_board: "Pizarra", nav_analytics: "Analítica", nav_settings: "Ajustes", nav_projects: "PROYECTOS", btn_new_proj: "+ Nuevo Proyecto",
@@ -22,7 +23,8 @@ const dict = {
         habits_title: "Rutinas de Hoy", habits_empty: "No hay rutinas programadas para hoy.",
         js_exec: "Ejecutar", js_edit: "Editar", js_comp: "Completar", js_del: "Borrar", js_undo: "Deshacer", js_tasks: "tareas",
         js_rank1: "Analista", js_rank2: "Asociado", js_rank3: "Mánager", js_rank4: "Ejecutivo", js_streak: "Racha",
-        js_opt1: "Bandeja", js_opt2: "Algún día", js_opt3: "Esta Semana", js_opt4: "Hacer Hoy"
+        js_opt1: "Bandeja", js_opt2: "Algún día", js_opt3: "Esta Semana", js_opt4: "Hacer Hoy",
+        tree_seed: "Semilla", tree_sprout: "Brote", tree_tree: "Árbol", tree_oak: "Roble", tree_dead: "Marchito"
     },
     en: {
         nav_inbox: "Inbox", nav_board: "Board", nav_analytics: "Analytics", nav_settings: "Settings", nav_projects: "PROJECTS", btn_new_proj: "+ New Project",
@@ -39,12 +41,14 @@ const dict = {
         habits_title: "Today's Routines", habits_empty: "No routines scheduled for today.",
         js_exec: "Execute", js_edit: "Edit", js_comp: "Complete", js_del: "Delete", js_undo: "Undo", js_tasks: "tasks",
         js_rank1: "Analyst", js_rank2: "Associate", js_rank3: "Manager", js_rank4: "Executive", js_streak: "Streak",
-        js_opt1: "Inbox", js_opt2: "Backlog", js_opt3: "This Week", js_opt4: "Today"
+        js_opt1: "Inbox", js_opt2: "Backlog", js_opt3: "This Week", js_opt4: "Today",
+        tree_seed: "Seed", tree_sprout: "Sprout", tree_tree: "Tree", tree_oak: "Oak", tree_dead: "Withered"
     }
 };
 
 const App = (() => {
     let tasks = []; let folders = ['General']; let currentActiveFolder = 'General';
+    let tree = { health: 100, lastCheck: '' }; // 🔥 NUEVO: Estado del Árbol
     let focusInterval; let myChart = null; let draggedTaskId = null; let currentEnergyFilter = 'all';
     let lang = localStorage.getItem('smartLang') || 'es';
 
@@ -55,8 +59,23 @@ const App = (() => {
     
     const getLocalDate = (offsetDays = 0) => { const d = new Date(); d.setDate(d.getDate() + offsetDays); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
     
-    const checkDailyHabits = () => {
-        const todayStr = getLocalDate(0); const currentDayNum = new Date().getDay().toString(); let needsSave = false;
+    // --- LÓGICA DE DÍAS Y SALUD DEL ÁRBOL ---
+    const checkDailyRoutinesAndTree = () => {
+        const todayStr = getLocalDate(0); const yesterdayStr = getLocalDate(-1); const currentDayNum = new Date().getDay().toString(); 
+        let needsTaskSave = false; let needsTreeSave = false;
+
+        // 1. Revisar penalizaciones del Árbol (Tareas atrasadas en Hacer Hoy)
+        if (!tree.lastCheck) { tree.lastCheck = todayStr; needsTreeSave = true; }
+        if (tree.lastCheck !== todayStr) {
+            const neglectedTasks = tasks.filter(t => !t.completed && t.status === 'today').length;
+            if (neglectedTasks > 0) {
+                tree.health = Math.max(0, tree.health - (neglectedTasks * 15)); // Castigo de 15% por tarea abandonada
+            }
+            tree.lastCheck = todayStr;
+            needsTreeSave = true;
+        }
+
+        // 2. Revisar Hábitos
         tasks.forEach(task => {
             if (task.completed && task.freq && task.freq !== 'once') {
                 let shouldRevive = false;
@@ -64,13 +83,14 @@ const App = (() => {
                 else if (task.freq === 'weekly' && task.days && task.days.includes(currentDayNum) && task.lastCompletedDate !== todayStr) shouldRevive = true;
 
                 if (shouldRevive) {
-                    task.completed = false; task.status = 'today'; needsSave = true;
-                    const yesterdayStr = getLocalDate(-1);
+                    task.completed = false; task.status = 'today'; needsTaskSave = true;
                     if (task.lastCompletedDate !== yesterdayStr && task.lastCompletedDate) task.streak = 0;
                 }
             }
         });
-        if (needsSave) Storage.saveTasks();
+
+        if (needsTaskSave) Storage.saveTasks();
+        if (needsTreeSave) Storage.saveTree();
     };
 
     const toggleDaysSelector = (mode) => { const sel = document.getElementById(mode === 'new' ? 'freqInput' : 'editFreqInput'); const daysDiv = document.getElementById(mode === 'new' ? 'daysSelector_new' : 'daysSelector_edit'); if (sel.value === 'weekly') { daysDiv.classList.remove('hidden'); } else { daysDiv.classList.add('hidden'); } };
@@ -78,10 +98,12 @@ const App = (() => {
     const Storage = {
         saveTasks: () => { if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/tasks'), tasks); },
         saveFolders: () => { if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/folders'), folders); },
+        saveTree: () => { if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/tree'), tree); },
         listen: () => {
             if(currentUser) {
-                onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => { const data = snapshot.val(); tasks = data ? (Array.isArray(data) ? data.filter(x=>x) : Object.values(data).filter(x=>x)) : []; checkDailyHabits(); UI.render(); });
+                onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => { const data = snapshot.val(); tasks = data ? (Array.isArray(data) ? data.filter(x=>x) : Object.values(data).filter(x=>x)) : []; checkDailyRoutinesAndTree(); UI.render(); });
                 onValue(ref(db, 'users/' + currentUser.uid + '/folders'), (snapshot) => { const data = snapshot.val(); if (data) folders = Array.isArray(data) ? data : Object.values(data); UI.renderFolders(); });
+                onValue(ref(db, 'users/' + currentUser.uid + '/tree'), (snapshot) => { const data = snapshot.val(); if (data) { tree = data; checkDailyRoutinesAndTree(); UI.updateStats(); } else { Storage.saveTree(); } });
             }
         }
     };
@@ -143,16 +165,22 @@ const App = (() => {
             if (!tk.completedDates) tk.completedDates = [];
 
             if(tk.completed) { 
-                tk.completedAt = today; // Guardamos para heatmap
+                tk.completedAt = today; 
                 if (!tk.completedDates.includes(today)) tk.completedDates.push(today);
+                
+                // CURAR AL ÁRBOL (+10% Salud al completar)
+                tree.health = Math.min(100, tree.health + 10);
+                Storage.saveTree();
 
-                if(tk.freq && tk.freq !== 'once') { 
-                    if(tk.lastCompletedDate !== today) { tk.streak = (tk.streak || 0) + 1; tk.lastCompletedDate = today; } 
-                } 
+                if(tk.freq && tk.freq !== 'once') { if(tk.lastCompletedDate !== today) { tk.streak = (tk.streak || 0) + 1; tk.lastCompletedDate = today; } } 
                 if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#38bdf8', '#10b981'] });
             } 
             else { 
-                tk.completedDates = tk.completedDates.filter(d => d !== today); // Deshacer para heatmap
+                tk.completedDates = tk.completedDates.filter(d => d !== today); 
+                // Quitar recompensa si se deshace
+                tree.health = Math.max(0, tree.health - 10);
+                Storage.saveTree();
+                
                 if(tk.freq && tk.freq !== 'once') { tk.streak = Math.max(0, (tk.streak || 0) - 1); tk.lastCompletedDate = null; } 
             } 
             Storage.saveTasks(); 
@@ -169,9 +197,10 @@ const App = (() => {
     const UI = {
         renderFolders: () => { const list = document.getElementById('folderList'); const select = document.getElementById('folderInput'); if(list) { list.innerHTML = ''; folders.forEach(f => { const folderItem = document.createElement('div'); folderItem.className = 'folder-item'; const btn = document.createElement('button'); btn.className = 'nav-btn'; btn.innerHTML = f; btn.onclick = function() { App.openFolder(f, this); }; folderItem.appendChild(btn); if(f !== 'General') { const delBtn = document.createElement('button'); delBtn.className = 'delete-folder-btn'; delBtn.innerHTML = '✕'; delBtn.onclick = (e) => { e.stopPropagation(); App.deleteFolder(f); }; folderItem.appendChild(delBtn); } list.appendChild(folderItem); }); } if(select) { select.innerHTML = ''; folders.forEach(f => { select.innerHTML += `<option value="${f}">${f}</option>`; }); } },
         updateStats: () => {
-            if(tasks.length === 0) return; const completed = tasks.filter(t => t.completed); const c = completed.length;
-            if(document.getElementById('progressFill')) document.getElementById('progressFill').style.width = `${(c / tasks.length) * 100}%`;
+            const completed = tasks.filter(t => t.completed); const c = completed.length;
+            if(document.getElementById('progressFill')) document.getElementById('progressFill').style.width = tasks.length === 0 ? '0%' : `${(c / tasks.length) * 100}%`;
             if(document.getElementById('statsNumbers')) document.getElementById('statsNumbers').textContent = `${c}/${tasks.length} ${t('js_tasks')}`;
+            
             const totalMins = completed.reduce((sum, task) => sum + (task.time || 0), 0);
             if(document.getElementById('totalMinutes')) {
                 document.getElementById('totalMinutes').textContent = `${totalMins}m`; document.getElementById('totalCompleted').textContent = `${c}`;
@@ -181,21 +210,42 @@ const App = (() => {
                 if(totalMins >= 1000) { level = t('js_rank4'); color = "var(--cat-proyecto)"; } 
                 if(document.getElementById('userLevel')) { document.getElementById('userLevel').innerHTML = level; document.getElementById('userLevel').style.color = color; }
             }
-            UI.renderHeatmap(); // Llama a pintar el calendario de constancia
+
+            // --- ACTUALIZAR EL ÁRBOL VISUALMENTE ---
+            const treeIconEl = document.getElementById('treeIcon');
+            if(treeIconEl) {
+                let isDead = tree.health <= 0;
+                let stageName, icon, nextXP, currentTierXP;
+                
+                if (isDead) { stageName = t('tree_dead'); icon = '🥀'; nextXP = totalMins; currentTierXP = totalMins; }
+                else if (totalMins < 60) { stageName = t('tree_seed'); icon = '🌱'; nextXP = 60; currentTierXP = 0; }
+                else if (totalMins < 300) { stageName = t('tree_sprout'); icon = '🌿'; nextXP = 300; currentTierXP = 60; }
+                else if (totalMins < 1000) { stageName = t('tree_tree'); icon = '🌳'; nextXP = 1000; currentTierXP = 300; }
+                else { stageName = t('tree_oak'); icon = '🌲'; nextXP = totalMins; currentTierXP = totalMins; }
+                
+                const progressPercent = (nextXP === totalMins) ? 100 : Math.min(100, ((totalMins - currentTierXP) / (nextXP - currentTierXP)) * 100);
+                
+                treeIconEl.textContent = icon;
+                document.getElementById('treeStageName').textContent = stageName;
+                document.getElementById('treeProgressText').textContent = isDead ? `0 XP` : (nextXP === totalMins ? `MAX` : `${totalMins} / ${nextXP} XP`);
+                
+                const fill = document.getElementById('treeProgressFill');
+                fill.style.width = `${progressPercent}%`; fill.style.background = isDead ? 'var(--danger-red)' : 'var(--cta-green)';
+                
+                const healthEl = document.getElementById('treeHealth');
+                healthEl.textContent = `❤️ ${tree.health}%`;
+                healthEl.className = tree.health > 50 ? 'health-good' : (tree.health > 0 ? 'health-warn' : 'health-dead');
+            }
+
+            UI.renderHeatmap(); 
         },
         renderHeatmap: () => {
             const container = document.getElementById('heatmapContainer'); if(!container) return;
             const counts = {};
-            // Cuenta cuántas tareas se completaron en cada fecha
             tasks.forEach(task => {
-                if(task.completedDates && Array.isArray(task.completedDates)) {
-                    task.completedDates.forEach(d => { counts[d] = (counts[d] || 0) + 1; });
-                } else if(task.completed) {
-                    const fallbackDate = task.completedAt || getLocalDate(0);
-                    counts[fallbackDate] = (counts[fallbackDate] || 0) + 1;
-                }
+                if(task.completedDates && Array.isArray(task.completedDates)) { task.completedDates.forEach(d => { counts[d] = (counts[d] || 0) + 1; }); } 
+                else if(task.completed) { const fallbackDate = task.completedAt || getLocalDate(0); counts[fallbackDate] = (counts[fallbackDate] || 0) + 1; }
             });
-            // Genera el gráfico de 12 columnas (Semanas) x 7 filas (Días)
             let html = '';
             for (let col = 0; col < 12; col++) {
                 html += '<div class="heatmap-col">';
@@ -203,8 +253,7 @@ const App = (() => {
                     const daysAgo = (11 - col) * 7 + (6 - row);
                     const dObj = new Date(); dObj.setDate(dObj.getDate() - daysAgo);
                     const dStr = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
-                    const c = counts[dStr] || 0;
-                    let lvl = 0;
+                    const c = counts[dStr] || 0; let lvl = 0;
                     if(c === 1) lvl = 1; else if(c === 2) lvl = 2; else if(c >= 3 && c <= 4) lvl = 3; else if(c >= 5) lvl = 4;
                     html += `<div class="heatmap-cell" data-level="${lvl}" title="${c} ${t('js_tasks')} (${dStr})"></div>`;
                 }
@@ -295,10 +344,10 @@ const App = (() => {
     const saveApiKey = () => { const key = document.getElementById('apiKeyInput').value.trim(); if(key) { localStorage.setItem('aiApiKey', key); showToast("Key Saved"); } else { localStorage.removeItem('aiApiKey'); showToast("Key Removed"); } };
     const askGemini = async () => { const apiKey = localStorage.getItem('aiApiKey'); if (!apiKey) { alert("API Key required."); switchTab('ajustes', document.querySelectorAll('.nav-btn')[3]); return; } const aiCard = document.getElementById('aiResponseCard'); const aiText = document.getElementById('aiResponseText'); const pendingTasks = tasks.filter(t => !t.completed); if(pendingTasks.length === 0) { showToast("No tasks available."); return; } aiCard.classList.remove('hidden'); aiText.innerHTML = '<i>Processing workload data...</i>'; const tasksString = pendingTasks.map(t => `- [${t.status.toUpperCase()}] ${t.title} (${t.time}m, Energy: ${t.energy})`).join('\n'); const promptSystem = `You are an Executive Assistant. Your goal is to maximize efficiency. Recommend EXACTLY ONE task from the list. Be concise, professional, no emojis. Provide rationale. Respond in ${lang === 'es' ? 'Spanish' : 'English'}.`; const promptUser = `Energy capacity: ${currentEnergyFilter}. Pending tasks:\n${tasksString}`; try { const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: [{ role: "system", content: promptSystem }, { role: "user", content: promptUser }] }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error?.message || "Server Error."); } const data = await response.json(); const aiResponse = data.choices[0].message.content; aiText.innerHTML = ''; let i = 0; const typeWriter = setInterval(() => { if(i < aiResponse.length) { aiText.innerHTML += aiResponse.charAt(i); i++; } else { clearInterval(typeWriter); } }, 15); } catch (error) { console.error(error); aiText.innerHTML = `<span style="color:var(--danger-red)">System Error: ${error.message}</span>`; } };
     const toggleTheme = () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); } else { html.setAttribute('data-theme', 'dark'); } UI.renderChart(); };
-    const clearAllData = () => { if(confirm("Format database?")) { tasks = []; folders = ['General']; Storage.saveTasks(); Storage.saveFolders(); showToast("Formatted."); } };
+    const clearAllData = () => { if(confirm("Format database?")) { tasks = []; folders = ['General']; tree = { health: 100, lastCheck: '' }; Storage.saveTasks(); Storage.saveFolders(); Storage.saveTree(); showToast("Formatted."); } };
     const exportData = () => { if(tasks.length===0) return; const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks)); a.download = "backup.json"; document.body.appendChild(a); a.click(); a.remove(); };
     let isLoggingIn = false; const login = async () => { if(isLoggingIn) return; isLoggingIn = true; try { await signInWithPopup(auth, provider); } catch (error) { if(error.code !== 'auth/cancelled-popup-request') alert("Auth Error: " + error.message); } finally { isLoggingIn = false; } };
-    const logout = () => signOut(auth).then(() => { tasks = []; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
+    const logout = () => signOut(auth).then(() => { tasks = []; tree = { health: 100, lastCheck: '' }; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
 
     const init = () => {
         if(document.getElementById('taskForm')) document.getElementById('taskForm').addEventListener('submit', addTask);
