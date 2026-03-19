@@ -40,9 +40,9 @@
             </nav>
             
             <div class="sidebar-footer">
-                <button class="nav-btn" onclick="App.toggleLanguage()" style="text-align: center; border: 1px solid var(--border-color);" id="langBtn">🇬🇧 English</button>
-                <button id="themeToggle" class="nav-btn" onclick="App.toggleTheme()" style="text-align: center; border: 1px solid var(--border-color);" data-i18n="btn_theme">Modo Claro</button>
-                <button onclick="App.logout()" class="nav-btn" style="text-align: center; color: var(--danger-red);" data-i18n="btn_logout">Cerrar Sesión</button>
+                <button class="nav-btn" onclick="App.toggleLanguage()" style="border: 1px solid var(--border-color);" id="langBtn">🇬🇧 English</button>
+                <button id="themeToggle" class="nav-btn" onclick="App.toggleTheme()" style="border: 1px solid var(--border-color);" data-i18n="btn_theme">Modo Claro</button>
+                <button onclick="App.logout()" class="nav-btn" style="color: var(--danger-red);" data-i18n="btn_logout">Cerrar Sesión</button>
             </div>
         </aside>
 
@@ -57,27 +57,34 @@
                 </div>
 
                 <form id="taskForm" class="task-form glass-panel">
-                                        <!-- NUEVO: SELECTOR DE FRECUENCIA AVANZADO -->
-                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <div style="margin-bottom: 1rem;"><input type="url" id="urlInput" placeholder="URL del recurso (Opcional)"></div>
+                    <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
+                        <input type="text" id="titleInput" placeholder="Descripción de la tarea" required style="flex: 2; min-width: 150px;">
+                        <select id="categoryInput" style="flex: 1; min-width: 100px;">
+                            <option value="video" data-i18n="cat_video">Video</option><option value="articulo" data-i18n="cat_article">Artículo</option>
+                            <option value="curso" data-i18n="cat_course">Curso</option><option value="proyecto" data-i18n="cat_project">Proyecto</option>
+                        </select>
+                        <select id="folderInput" style="flex: 1; min-width: 100px;"><option value="General">General</option></select>
+                        <select id="energyInput" style="flex: 1; min-width: 100px;">
+                            <option value="alta" data-i18n="en_high">Energía Alta</option><option value="media" selected data-i18n="en_med">Normal</option><option value="baja" data-i18n="en_low">Energía Baja</option>
+                        </select>
+                        <input type="number" id="timeInput" placeholder="Min" min="1" required style="flex: 1; max-width: 80px;">
+                    </div>
+
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); width: 100%;">
                         <label style="font-size: 0.85rem; font-weight: 500;" data-i18n="freq_label">Frecuencia de la tarea:</label>
                         <select id="freqInput" style="margin-top: 5px;" onchange="App.toggleDaysSelector('new')">
                             <option value="once" data-i18n="freq_once">Una sola vez (Normal)</option>
                             <option value="daily" data-i18n="freq_daily">Todos los días</option>
-                            <option value="weekly" data-i18n="freq_weekly">Días específicos de la semana</option>
+                            <option value="weekly" data-i18n="freq_weekly">Días específicos</option>
                         </select>
-                        
-                        <!-- Días de la semana (Ocultos por defecto) -->
                         <div id="daysSelector_new" class="days-selector hidden">
-                            <label><input type="checkbox" value="1" class="day-cb"> L</label>
-                            <label><input type="checkbox" value="2" class="day-cb"> M</label>
-                            <label><input type="checkbox" value="3" class="day-cb"> X</label>
-                            <label><input type="checkbox" value="4" class="day-cb"> J</label>
-                            <label><input type="checkbox" value="5" class="day-cb"> V</label>
-                            <label><input type="checkbox" value="6" class="day-cb"> S</label>
+                            <label><input type="checkbox" value="1" class="day-cb"> L</label><label><input type="checkbox" value="2" class="day-cb"> M</label>
+                            <label><input type="checkbox" value="3" class="day-cb"> X</label><label><input type="checkbox" value="4" class="day-cb"> J</label>
+                            <label><input type="checkbox" value="5" class="day-cb"> V</label><label><input type="checkbox" value="6" class="day-cb"> S</label>
                             <label><input type="checkbox" value="0" class="day-cb"> D</label>
                         </div>
                     </div>
-
                     <button type="submit" class="cta-button" style="margin-top: 1.5rem;" data-i18n="btn_save">Guardar Tarea</button>
                 </form>
 
@@ -94,8 +101,7 @@
                 </div>
 
                 <div id="emptyState" class="empty-state hidden glass-panel">
-                    <h3 data-i18n="empty_title">Bandeja Vacía</h3>
-                    <p data-i18n="empty_sub">Añade una tarea para comenzar.</p>
+                    <h3 data-i18n="empty_title">Bandeja Vacía</h3><p data-i18n="empty_sub">Añade una tarea para comenzar.</p>
                 </div>
                 <div id="tasksGrid" class="tasks-grid"></div>
             </section>
@@ -110,6 +116,14 @@
                     <div id="aiResponseCard" class="ai-response-card hidden">
                         <div style="font-weight: 600; margin-bottom: 0.5rem;" data-i18n="ai_name">Asistente Ejecutivo:</div>
                         <p id="aiResponseText">Procesando datos...</p>
+                    </div>
+                </div>
+
+                <!-- 🔥 NUEVO: PANEL FIJO DE RUTINAS -->
+                <div id="habitsPanel" class="glass-panel" style="margin-bottom: 2rem; padding: 1.5rem;">
+                    <h3 style="font-size: 1rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);" data-i18n="habits_title">Rutinas de Hoy</h3>
+                    <div id="habitsList" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <!-- Los hábitos se inyectan aquí -->
                     </div>
                 </div>
                 
@@ -172,6 +186,7 @@
         </main>
     </div>
 
+    <!-- MODOS Y MODALES -->
     <div id="focusOverlay" class="focus-overlay hidden">
         <div class="focus-content">
             <span class="focus-badge" data-i18n="focus_badge">SESIÓN DE ENFOQUE</span>
@@ -182,60 +197,41 @@
             <button id="exitFocus" class="cta-button danger" data-i18n="btn_end_focus">Finalizar Sesión</button>
         </div>
     </div>
-    <!-- ================= MODAL DE EDICIÓN AVANZADA ================= -->
-    <div id="editModal" class="focus-overlay hidden" style="background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
-        <div class="glass-panel" style="background: var(--bg-main); padding: 2rem; max-width: 500px; width: 90%; border-radius: var(--radius);">
-            <h3 style="margin-bottom: 1.5rem;" data-i18n="edit_title">Editar Tarea</h3>
-            
+
+    <div id="editModal" class="focus-overlay hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);">
+        <div class="glass-panel" style="background: var(--bg-main); padding: 2rem; max-width: 500px; width: 90%; border-radius: var(--radius); text-align: left;">
+            <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem;" data-i18n="edit_title">Editar Tarea</h3>
             <input type="hidden" id="editTaskId">
-            
             <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div>
-                    <label style="font-size: 0.8rem; color: var(--text-muted);" data-i18n="edit_name">Nombre de la tarea</label>
-                    <input type="text" id="editTitleInput" required>
-                </div>
-                
+                <div><label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_name">Nombre de la tarea</label><input type="text" id="editTitleInput" required style="margin-top: 5px;"></div>
                 <div style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 0.8rem; color: var(--text-muted);" data-i18n="edit_time">Tiempo (min)</label>
-                        <input type="number" id="editTimeInput" min="1" required>
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="font-size: 0.8rem; color: var(--text-muted);" data-i18n="edit_energy">Energía</label>
-                        <select id="editEnergyInput">
-                            <option value="alta" data-i18n="en_high">Alta</option>
-                            <option value="media" data-i18n="en_med">Normal</option>
-                            <option value="baja" data-i18n="en_low">Baja</option>
+                    <div style="flex: 1;"><label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_time">Tiempo (min)</label><input type="number" id="editTimeInput" min="1" required style="margin-top: 5px;"></div>
+                    <div style="flex: 1;"><label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_energy">Energía</label>
+                        <select id="editEnergyInput" style="margin-top: 5px;">
+                            <option value="alta" data-i18n="en_high">Alta</option><option value="media" data-i18n="en_med">Normal</option><option value="baja" data-i18n="en_low">Baja</option>
                         </select>
                     </div>
                 </div>
-
                 <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">
                     <label style="font-size: 0.85rem; font-weight: 500;" data-i18n="freq_label">Frecuencia de la tarea:</label>
                     <select id="editFreqInput" style="margin-top: 5px;" onchange="App.toggleDaysSelector('edit')">
-                        <option value="once" data-i18n="freq_once">Una sola vez (Normal)</option>
-                        <option value="daily" data-i18n="freq_daily">Todos los días</option>
-                        <option value="weekly" data-i18n="freq_weekly">Días específicos de la semana</option>
+                        <option value="once" data-i18n="freq_once">Una sola vez (Normal)</option><option value="daily" data-i18n="freq_daily">Todos los días</option><option value="weekly" data-i18n="freq_weekly">Días específicos</option>
                     </select>
-                    
                     <div id="daysSelector_edit" class="days-selector hidden">
-                        <label><input type="checkbox" value="1" class="edit-day-cb"> L</label>
-                        <label><input type="checkbox" value="2" class="edit-day-cb"> M</label>
-                        <label><input type="checkbox" value="3" class="edit-day-cb"> X</label>
-                        <label><input type="checkbox" value="4" class="edit-day-cb"> J</label>
-                        <label><input type="checkbox" value="5" class="edit-day-cb"> V</label>
-                        <label><input type="checkbox" value="6" class="edit-day-cb"> S</label>
+                        <label><input type="checkbox" value="1" class="edit-day-cb"> L</label><label><input type="checkbox" value="2" class="edit-day-cb"> M</label>
+                        <label><input type="checkbox" value="3" class="edit-day-cb"> X</label><label><input type="checkbox" value="4" class="edit-day-cb"> J</label>
+                        <label><input type="checkbox" value="5" class="edit-day-cb"> V</label><label><input type="checkbox" value="6" class="edit-day-cb"> S</label>
                         <label><input type="checkbox" value="0" class="edit-day-cb"> D</label>
                     </div>
                 </div>
             </div>
-
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 2rem;">
-                <button class="nav-btn" onclick="App.closeEditModal()" data-i18n="btn_cancel" style="background: var(--input-bg);">Cancelar</button>
+                <button class="nav-btn" onclick="App.closeEditModal()" data-i18n="btn_cancel" style="background: var(--input-bg); border: 1px solid var(--border-color);">Cancelar</button>
                 <button class="cta-button" onclick="App.saveEditedTask()" data-i18n="btn_save_changes">Guardar Cambios</button>
             </div>
         </div>
     </div>
+
     <div id="toast-container"></div>
     <script type="module" src="app.js"></script>
 </body>
