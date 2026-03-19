@@ -14,7 +14,7 @@ const dict = {
         filt_all: "Todas", filt_high: "Alta", filt_med: "Normal", filt_low: "Baja", empty_title: "Bandeja Vacía", empty_sub: "Añade una tarea para comenzar.",
         board_title: "Pizarra", board_sub: "Organiza y ejecuta tus tareas.", btn_ai: "Analizar mi carga de trabajo", ai_name: "Asistente Ejecutivo:",
         col_later: "Algún día", col_week: "Esta Semana", col_today: "Hacer Hoy", stat_title: "Analítica", stat_sub: "Métricas de rendimiento.",
-        stat_rank: "Rango Actual", stat_time: "Tiempo Invertido", stat_done: "Completadas", stat_dist: "Distribución", stat_log: "Registro de Actividad",
+        stat_rank: "Rango Actual", stat_time: "Tiempo Invertido", stat_done: "Completadas", stat_dist: "Distribución", stat_log: "Registro de Actividad", stat_heatmap: "Mapa de Constancia (Últimas 12 semanas)",
         set_title: "Ajustes", set_sub: "Configura tu entorno.", set_ai: "Integración IA (Groq)", set_ai_sub: "Introduce tu API Key para activar el asistente.",
         btn_save_key: "Guardar Configuración", set_data: "Gestión de Datos", set_data_sub: "Exporta tus datos o formatea el sistema.", btn_format: "Formatear BD",
         proj_sub: "Tareas asignadas a este proyecto.", focus_badge: "SESIÓN DE ENFOQUE", btn_material: "Abrir Material", btn_end_focus: "Finalizar Sesión",
@@ -31,7 +31,7 @@ const dict = {
         filt_all: "All", filt_high: "High", filt_med: "Normal", filt_low: "Low", empty_title: "Inbox is Empty", empty_sub: "Add a task to start.",
         board_title: "Board", board_sub: "Organize and execute tasks.", btn_ai: "Analyze my schedule", ai_name: "Executive Assistant:",
         col_later: "Backlog", col_week: "This Week", col_today: "Today", stat_title: "Analytics", stat_sub: "Performance metrics.",
-        stat_rank: "Current Rank", stat_time: "Time Invested", stat_done: "Completed", stat_dist: "Distribution", stat_log: "Activity Log",
+        stat_rank: "Current Rank", stat_time: "Time Invested", stat_done: "Completed", stat_dist: "Distribution", stat_log: "Activity Log", stat_heatmap: "Consistency Map (Last 12 weeks)",
         set_title: "Settings", set_sub: "Manage your workspace.", set_ai: "AI Integration (Groq)", set_ai_sub: "Provide your API Key to enable assistant.",
         btn_save_key: "Save Configuration", set_data: "Data Management", set_data_sub: "Export or format your database.", btn_format: "Format Database",
         proj_sub: "Tasks assigned to this project.", focus_badge: "FOCUS SESSION", btn_material: "Open Material", btn_end_focus: "End Session",
@@ -109,7 +109,7 @@ const App = (() => {
         tasks.unshift({ 
             id: Date.now().toString(), url: document.getElementById('urlInput').value, title: document.getElementById('titleInput').value, 
             category: document.getElementById('categoryInput').value, energy: energyVal, folder: folderVal, time: parseInt(document.getElementById('timeInput').value), 
-            freq: freqVal, days: selectedDays, streak: 0, lastCompletedDate: null, completed: false, status: 'bandeja' 
+            freq: freqVal, days: selectedDays, streak: 0, lastCompletedDate: null, completedDates: [], completed: false, status: 'bandeja' 
         });
         Storage.saveTasks(); document.getElementById('taskForm').reset(); document.getElementById('folderInput').value = folderVal; toggleDaysSelector('new'); showToast(lang === 'es' ? "Guardado" : "Saved");
     };
@@ -139,11 +139,22 @@ const App = (() => {
         const tk = tasks.find(x => x.id === id); 
         if(tk) { 
             tk.completed = !tk.completed; 
+            const today = getLocalDate(0);
+            if (!tk.completedDates) tk.completedDates = [];
+
             if(tk.completed) { 
-                if(tk.freq !== 'once') { const today = getLocalDate(0); if(tk.lastCompletedDate !== today) { tk.streak = (tk.streak || 0) + 1; tk.lastCompletedDate = today; } } 
+                tk.completedAt = today; // Guardamos para heatmap
+                if (!tk.completedDates.includes(today)) tk.completedDates.push(today);
+
+                if(tk.freq && tk.freq !== 'once') { 
+                    if(tk.lastCompletedDate !== today) { tk.streak = (tk.streak || 0) + 1; tk.lastCompletedDate = today; } 
+                } 
                 if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#38bdf8', '#10b981'] });
             } 
-            else { if(tk.freq !== 'once') { tk.streak = Math.max(0, (tk.streak || 0) - 1); tk.lastCompletedDate = null; } } 
+            else { 
+                tk.completedDates = tk.completedDates.filter(d => d !== today); // Deshacer para heatmap
+                if(tk.freq && tk.freq !== 'once') { tk.streak = Math.max(0, (tk.streak || 0) - 1); tk.lastCompletedDate = null; } 
+            } 
             Storage.saveTasks(); 
         } 
     };
@@ -170,12 +181,41 @@ const App = (() => {
                 if(totalMins >= 1000) { level = t('js_rank4'); color = "var(--cat-proyecto)"; } 
                 if(document.getElementById('userLevel')) { document.getElementById('userLevel').innerHTML = level; document.getElementById('userLevel').style.color = color; }
             }
+            UI.renderHeatmap(); // Llama a pintar el calendario de constancia
+        },
+        renderHeatmap: () => {
+            const container = document.getElementById('heatmapContainer'); if(!container) return;
+            const counts = {};
+            // Cuenta cuántas tareas se completaron en cada fecha
+            tasks.forEach(task => {
+                if(task.completedDates && Array.isArray(task.completedDates)) {
+                    task.completedDates.forEach(d => { counts[d] = (counts[d] || 0) + 1; });
+                } else if(task.completed) {
+                    const fallbackDate = task.completedAt || getLocalDate(0);
+                    counts[fallbackDate] = (counts[fallbackDate] || 0) + 1;
+                }
+            });
+            // Genera el gráfico de 12 columnas (Semanas) x 7 filas (Días)
+            let html = '';
+            for (let col = 0; col < 12; col++) {
+                html += '<div class="heatmap-col">';
+                for (let row = 0; row < 7; row++) {
+                    const daysAgo = (11 - col) * 7 + (6 - row);
+                    const dObj = new Date(); dObj.setDate(dObj.getDate() - daysAgo);
+                    const dStr = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
+                    const c = counts[dStr] || 0;
+                    let lvl = 0;
+                    if(c === 1) lvl = 1; else if(c === 2) lvl = 2; else if(c >= 3 && c <= 4) lvl = 3; else if(c >= 5) lvl = 4;
+                    html += `<div class="heatmap-cell" data-level="${lvl}" title="${c} ${t('js_tasks')} (${dStr})"></div>`;
+                }
+                html += '</div>';
+            }
+            container.innerHTML = html;
         },
         render: () => {
             const g = { bandeja: document.getElementById('tasksGrid'), later: document.getElementById('column-later'), week: document.getElementById('column-week'), today: document.getElementById('column-today'), history: document.getElementById('historyList'), folder: document.getElementById('folderTasksGrid'), habits: document.getElementById('habitsList') };
             Object.values(g).forEach(el => { if(el) el.innerHTML = ''; }); 
-            let enBandeja = 0; let hasHabitsToday = false;
-            const currentDayNum = new Date().getDay().toString();
+            let enBandeja = 0; let hasHabitsToday = false; const currentDayNum = new Date().getDay().toString();
 
             const createCardDOM = (task) => {
                 let energyLabel = task.energy === "alta" ? "High" : (task.energy === "baja" ? "Low" : "Normal");
@@ -204,16 +244,13 @@ const App = (() => {
             tasks.forEach(task => {
                 if (currentEnergyFilter !== 'all' && task.energy !== currentEnergyFilter && !task.completed) return;
 
-                // --- SISTEMA DE HÁBITOS (PANEL SUPERIOR) ---
                 if (task.freq && task.freq !== 'once') {
                     let isForToday = false;
                     if (task.freq === 'daily') isForToday = true;
                     if (task.freq === 'weekly' && task.days && task.days.includes(currentDayNum)) isForToday = true;
 
                     if (isForToday) {
-                        hasHabitsToday = true;
-                        const isDone = task.completed;
-                        const habitEl = document.createElement('div');
+                        hasHabitsToday = true; const isDone = task.completed; const habitEl = document.createElement('div');
                         habitEl.className = `habit-item ${isDone ? 'done' : ''}`;
                         habitEl.innerHTML = `
                             <div class="habit-left">
@@ -228,10 +265,9 @@ const App = (() => {
                         `;
                         if(g.habits) g.habits.appendChild(habitEl);
                     }
-                    return; // ¡Importante! Si es hábito, no lo pintamos en el Kanban.
+                    return; 
                 }
 
-                // --- TAREAS NORMALES ---
                 if (task.completed) {
                     if(g.history) g.history.innerHTML += `
                         <div class="history-item">
