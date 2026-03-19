@@ -119,9 +119,35 @@
                     </div>
                 </div>
 
-                <div id="habitsPanel" class="glass-panel" style="margin-bottom: 2rem; padding: 1.5rem;">
-                    <h3 style="font-size: 1rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);" data-i18n="habits_title">Rutinas de Hoy</h3>
-                    <div id="habitsList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                <!-- 🔥 GRID PARA HÁBITOS Y ÁRBOL (COMPARTEN ESPACIO) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    
+                    <!-- PANEL DE HÁBITOS -->
+                    <div id="habitsPanel" class="glass-panel" style="padding: 1.5rem;">
+                        <h3 style="font-size: 1rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);" data-i18n="habits_title">Rutinas de Hoy</h3>
+                        <div id="habitsList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                    </div>
+
+                    <!-- 🔥 NUEVO: EL ÁRBOL DEL FOCO -->
+                    <div id="treeWidget" class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                            <h3 style="font-size: 1rem;" data-i18n="tree_title">Árbol del Foco</h3>
+                            <span id="treeHealth" style="font-weight: 600; font-size: 0.9rem;">❤️ 100%</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1.5rem; flex-grow: 1;">
+                            <div id="treeIcon" style="font-size: 3.5rem; line-height: 1;">🌱</div>
+                            <div style="flex-grow: 1;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span id="treeStageName" style="font-weight: 600; font-size: 0.9rem;">Semilla</span>
+                                    <span id="treeProgressText" style="font-size: 0.8rem; color: var(--text-muted);">0 / 60 XP</span>
+                                </div>
+                                <div class="progress-bar" style="height: 8px;">
+                                    <div id="treeProgressFill" class="progress-fill" style="background: var(--cta-green);"></div>
+                                </div>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;" data-i18n="tree_desc">Completa tareas para que crezca. Si dejas tareas atrasadas en 'Hacer Hoy', perderá vida.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="kanban-board">
@@ -145,12 +171,10 @@
                     <div class="metric-card glass-panel"><h4 data-i18n="stat_done">Completadas</h4><div id="totalCompleted" class="metric-value">0</div></div>
                 </div>
                 <div class="stats-grid">
-                    <!-- 🔥 NUEVO: HEATMAP DE CONSTANCIA -->
                     <div class="glass-panel" style="padding: 1.5rem; grid-column: 1 / -1;">
                         <h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_heatmap">Mapa de Constancia (Últimas 12 semanas)</h3>
                         <div id="heatmapContainer" class="heatmap-grid"></div>
                     </div>
-
                     <div class="glass-panel" style="padding: 1.5rem;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_dist">Distribución</h3><div style="height: 250px;"><canvas id="statsChart"></canvas></div></div>
                     <div class="glass-panel" style="padding: 1.5rem;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_log">Registro de Actividad</h3><div id="historyList" class="history-list"></div></div>
                 </div>
