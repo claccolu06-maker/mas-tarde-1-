@@ -11,7 +11,7 @@ const dict = {
     es: {
         nav_inbox: "Bandeja", nav_board: "Pizarra", nav_analytics: "Analítica", nav_settings: "Ajustes", nav_projects: "PROYECTOS", btn_new_proj: "+ Nuevo Proyecto",
         btn_theme: "Modo Tema", btn_logout: "Cerrar Sesión", inbox_title: "Bandeja de Entrada", inbox_sub: "Captura tareas para procesarlas después.",
-        prog_title: "Progreso Diario", habit_label: "Establecer como rutina diaria", btn_save: "Guardar Tarea", filter_energy: "Filtro de Energía",
+        prog_title: "Progreso Diario", freq_label: "Frecuencia de la tarea:", freq_once: "Una sola vez (Normal)", freq_daily: "Todos los días", freq_weekly: "Días específicos", btn_save: "Guardar Tarea", filter_energy: "Filtro de Energía",
         filt_all: "Todas", filt_high: "Alta", filt_med: "Normal", filt_low: "Baja", empty_title: "Bandeja Vacía", empty_sub: "Añade una tarea para comenzar.",
         board_title: "Pizarra", board_sub: "Organiza y ejecuta tus tareas.", btn_ai: "Analizar mi carga de trabajo", ai_name: "Asistente Ejecutivo:",
         col_later: "Algún día", col_week: "Esta Semana", col_today: "Hacer Hoy", stat_title: "Analítica", stat_sub: "Métricas de rendimiento.",
@@ -19,6 +19,7 @@ const dict = {
         set_title: "Ajustes", set_sub: "Configura tu entorno.", set_ai: "Integración IA (Groq)", set_ai_sub: "Introduce tu API Key para activar el asistente.",
         btn_save_key: "Guardar Configuración", set_data: "Gestión de Datos", set_data_sub: "Exporta tus datos o formatea el sistema.", btn_format: "Formatear BD",
         proj_sub: "Tareas asignadas a este proyecto.", focus_badge: "SESIÓN DE ENFOQUE", btn_material: "Abrir Material", btn_end_focus: "Finalizar Sesión",
+        edit_title: "Editar Tarea", edit_name: "Nombre de la tarea", edit_time: "Tiempo (min)", edit_energy: "Energía", btn_cancel: "Cancelar", btn_save_changes: "Guardar Cambios",
         // Textos JS
         js_exec: "Ejecutar", js_edit: "Editar", js_comp: "Completar", js_del: "Borrar", js_undo: "Deshacer", js_tasks: "tareas",
         js_rank1: "Analista", js_rank2: "Asociado", js_rank3: "Mánager", js_rank4: "Ejecutivo", js_streak: "Racha",
@@ -27,7 +28,7 @@ const dict = {
     en: {
         nav_inbox: "Inbox", nav_board: "Board", nav_analytics: "Analytics", nav_settings: "Settings", nav_projects: "PROJECTS", btn_new_proj: "+ New Project",
         btn_theme: "Toggle Theme", btn_logout: "Sign Out", inbox_title: "Inbox", inbox_sub: "Capture tasks and process them later.",
-        prog_title: "Daily Progress", habit_label: "Set as daily routine", btn_save: "Save Task", filter_energy: "Energy Filter",
+        prog_title: "Daily Progress", freq_label: "Task Frequency:", freq_once: "Once (Normal)", freq_daily: "Every day", freq_weekly: "Specific days", btn_save: "Save Task", filter_energy: "Energy Filter",
         filt_all: "All", filt_high: "High", filt_med: "Normal", filt_low: "Low", empty_title: "Inbox is Empty", empty_sub: "Add a task to start.",
         board_title: "Board", board_sub: "Organize and execute tasks.", btn_ai: "Analyze my schedule", ai_name: "Executive Assistant:",
         col_later: "Backlog", col_week: "This Week", col_today: "Today", stat_title: "Analytics", stat_sub: "Performance metrics.",
@@ -35,6 +36,7 @@ const dict = {
         set_title: "Settings", set_sub: "Manage your workspace.", set_ai: "AI Integration (Groq)", set_ai_sub: "Provide your API Key to enable assistant.",
         btn_save_key: "Save Configuration", set_data: "Data Management", set_data_sub: "Export or format your database.", btn_format: "Format Database",
         proj_sub: "Tasks assigned to this project.", focus_badge: "FOCUS SESSION", btn_material: "Open Material", btn_end_focus: "End Session",
+        edit_title: "Edit Task", edit_name: "Task Name", edit_time: "Time (min)", edit_energy: "Energy", btn_cancel: "Cancel", btn_save_changes: "Save Changes",
         js_exec: "Execute", js_edit: "Edit", js_comp: "Complete", js_del: "Delete", js_undo: "Undo", js_tasks: "tasks",
         js_rank1: "Analyst", js_rank2: "Associate", js_rank3: "Manager", js_rank4: "Executive", js_streak: "Streak",
         js_opt1: "Inbox", js_opt2: "Backlog", js_opt3: "This Week", js_opt4: "Today"
@@ -57,17 +59,48 @@ const App = (() => {
     const toggleLanguage = () => { lang = lang === 'es' ? 'en' : 'es'; localStorage.setItem('smartLang', lang); applyTranslations(); };
 
     const showToast = (msg) => { const c = document.getElementById('toast-container'); if(!c) return; const toast = document.createElement('div'); toast.className = 'toast'; toast.textContent = msg; c.appendChild(toast); setTimeout(() => toast.remove(), 3000); };
+    
+    // --- LÓGICA DE DÍAS Y RUTINAS AVANZADAS ---
     const getLocalDate = (offsetDays = 0) => { const d = new Date(); d.setDate(d.getDate() + offsetDays); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
-
+    
     const checkDailyHabits = () => {
-        const today = getLocalDate(0); const yesterday = getLocalDate(-1); let needsSave = false;
+        const todayStr = getLocalDate(0); 
+        const todayDate = new Date();
+        const currentDayNum = todayDate.getDay().toString(); // 0 = Dom, 1 = Lun...
+        let needsSave = false;
+
         tasks.forEach(task => {
-            if (task.isHabit && task.completed && task.lastCompletedDate !== today) {
-                task.completed = false; task.status = 'today'; needsSave = true;
-                if (task.lastCompletedDate !== yesterday && task.lastCompletedDate) task.streak = 0;
+            if (task.completed && task.freq && task.freq !== 'once') {
+                // Si es un hábito recurrente, comprobamos si debe "revivir" hoy
+                let shouldRevive = false;
+                
+                if (task.freq === 'daily' && task.lastCompletedDate !== todayStr) {
+                    shouldRevive = true;
+                } else if (task.freq === 'weekly' && task.days) {
+                    // Si hoy es uno de los días marcados y no se ha completado hoy
+                    if (task.days.includes(currentDayNum) && task.lastCompletedDate !== todayStr) {
+                        shouldRevive = true;
+                    }
+                }
+
+                if (shouldRevive) {
+                    task.completed = false; 
+                    task.status = 'today'; 
+                    needsSave = true;
+                    // Lógica simple de racha (si se saltó ayer y ayer le tocaba... pierde racha)
+                    const yesterdayStr = getLocalDate(-1);
+                    if (task.lastCompletedDate !== yesterdayStr && task.lastCompletedDate) task.streak = 0;
+                }
             }
         });
         if (needsSave) Storage.saveTasks();
+    };
+
+    const toggleDaysSelector = (mode) => {
+        const sel = document.getElementById(mode === 'new' ? 'freqInput' : 'editFreqInput');
+        const daysDiv = document.getElementById(mode === 'new' ? 'daysSelector_new' : 'daysSelector_edit');
+        if (sel.value === 'weekly') { daysDiv.classList.remove('hidden'); } 
+        else { daysDiv.classList.add('hidden'); }
     };
 
     const Storage = {
@@ -89,15 +122,78 @@ const App = (() => {
     const checkSharedLinks = () => { const urlParams = new URLSearchParams(window.location.search); const t = urlParams.get('title') || urlParams.get('text'); const u = urlParams.get('url'); if (t || u) { if (document.getElementById('titleInput')) document.getElementById('titleInput').value = t || ''; if (document.getElementById('urlInput')) document.getElementById('urlInput').value = u || ''; window.history.replaceState({}, document.title, window.location.pathname); showToast("Link captured."); } };
     const dragStart = (e, id) => { draggedTaskId = id; e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', id); }; const allowDrop = (e) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.add('drag-over'); }; const dragLeave = (e) => { const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); }; const drop = (e, status) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); if(draggedTaskId) { moveTask(draggedTaskId, status); draggedTaskId = null; } };
     
+    // --- CREAR NUEVA TAREA (Con Días Específicos) ---
     const addTask = (e) => {
-        e.preventDefault(); const energyVal = document.getElementById('energyInput') ? document.getElementById('energyInput').value : 'media'; const isHabitChecked = document.getElementById('habitInput') ? document.getElementById('habitInput').checked : false; const folderVal = document.getElementById('folderInput') ? document.getElementById('folderInput').value : 'General';
-        tasks.unshift({ id: Date.now().toString(), url: document.getElementById('urlInput').value, title: document.getElementById('titleInput').value, category: document.getElementById('categoryInput').value, energy: energyVal, folder: folderVal, time: parseInt(document.getElementById('timeInput').value), isHabit: isHabitChecked, streak: 0, lastCompletedDate: null, completed: false, status: 'bandeja' });
-        Storage.saveTasks(); document.getElementById('taskForm').reset(); document.getElementById('folderInput').value = folderVal; showToast(lang === 'es' ? "Guardado" : "Saved");
+        e.preventDefault(); 
+        const energyVal = document.getElementById('energyInput') ? document.getElementById('energyInput').value : 'media'; 
+        const freqVal = document.getElementById('freqInput') ? document.getElementById('freqInput').value : 'once'; 
+        const folderVal = document.getElementById('folderInput') ? document.getElementById('folderInput').value : 'General';
+        
+        let selectedDays = [];
+        if (freqVal === 'weekly') {
+            document.querySelectorAll('.day-cb:checked').forEach(cb => selectedDays.push(cb.value));
+            if (selectedDays.length === 0) { alert(lang==='es'?"Selecciona al menos un día.":"Select at least one day."); return; }
+        }
+        
+        tasks.unshift({ 
+            id: Date.now().toString(), url: document.getElementById('urlInput').value, title: document.getElementById('titleInput').value, 
+            category: document.getElementById('categoryInput').value, energy: energyVal, folder: folderVal, time: parseInt(document.getElementById('timeInput').value), 
+            freq: freqVal, days: selectedDays, streak: 0, lastCompletedDate: null, completed: false, status: 'bandeja' 
+        });
+        Storage.saveTasks(); document.getElementById('taskForm').reset(); document.getElementById('folderInput').value = folderVal; toggleDaysSelector('new'); showToast(lang === 'es' ? "Guardado" : "Saved");
     };
 
-    const editTask = (id) => { const task = tasks.find(t => t.id === id); if (!task) return; const newTitle = prompt(lang==='es'?"Actualizar descripción:":"Update description:", task.title); if (!newTitle || newTitle.trim() === "") return; const newTime = prompt(lang==='es'?"Tiempo (min):":"Time (min):", task.time); if (!newTime || isNaN(newTime) || newTime <= 0) return; task.title = newTitle.trim(); task.time = parseInt(newTime); Storage.saveTasks(); UI.render(); };
-    const toggleComplete = (id) => { const tk = tasks.find(x => x.id === id); if(tk) { tk.completed = !tk.completed; if(tk.completed) { if(tk.isHabit) { const today = getLocalDate(0); if(tk.lastCompletedDate !== today) { tk.streak = (tk.streak || 0) + 1; tk.lastCompletedDate = today; } } } else { if(tk.isHabit) { tk.streak = Math.max(0, (tk.streak || 0) - 1); tk.lastCompletedDate = null; } } Storage.saveTasks(); } };
-    const deleteTask = (id) => { if(confirm('Delete?')) { tasks = tasks.filter(t => t.id !== id); Storage.saveTasks(); } };
+    // --- MODAL DE EDICIÓN ---
+    const editTask = (id) => { 
+        const task = tasks.find(t => t.id === id); if (!task) return; 
+        
+        document.getElementById('editTaskId').value = task.id;
+        document.getElementById('editTitleInput').value = task.title;
+        document.getElementById('editTimeInput').value = task.time;
+        document.getElementById('editEnergyInput').value = task.energy || 'media';
+        
+        const freqSel = document.getElementById('editFreqInput');
+        freqSel.value = task.freq || 'once';
+        toggleDaysSelector('edit');
+
+        // Limpiar checks previos
+        document.querySelectorAll('.edit-day-cb').forEach(cb => cb.checked = false);
+        if (task.freq === 'weekly' && task.days) {
+            document.querySelectorAll('.edit-day-cb').forEach(cb => {
+                if(task.days.includes(cb.value)) cb.checked = true;
+            });
+        }
+        
+        document.getElementById('editModal').classList.remove('hidden');
+    };
+
+    const closeEditModal = () => { document.getElementById('editModal').classList.add('hidden'); };
+
+    const saveEditedTask = () => {
+        const id = document.getElementById('editTaskId').value;
+        const task = tasks.find(t => t.id === id); if (!task) return; 
+        
+        const newTitle = document.getElementById('editTitleInput').value;
+        const newTime = parseInt(document.getElementById('editTimeInput').value);
+        const newEnergy = document.getElementById('editEnergyInput').value;
+        const newFreq = document.getElementById('editFreqInput').value;
+        
+        if (!newTitle || isNaN(newTime) || newTime <= 0) { alert(lang==='es'?"Datos inválidos.":"Invalid data."); return; }
+        
+        let selectedDays = [];
+        if (newFreq === 'weekly') {
+            document.querySelectorAll('.edit-day-cb:checked').forEach(cb => selectedDays.push(cb.value));
+            if (selectedDays.length === 0) { alert(lang==='es'?"Selecciona al menos un día.":"Select at least one day."); return; }
+        }
+
+        task.title = newTitle; task.time = newTime; task.energy = newEnergy;
+        task.freq = newFreq; task.days = selectedDays;
+        
+        Storage.saveTasks(); UI.render(); closeEditModal(); showToast(lang==='es'?"Actualizada":"Updated");
+    };
+
+    const toggleComplete = (id) => { const tk = tasks.find(x => x.id === id); if(tk) { tk.completed = !tk.completed; if(tk.completed) { if(tk.freq !== 'once') { const today = getLocalDate(0); if(tk.lastCompletedDate !== today) { tk.streak = (tk.streak || 0) + 1; tk.lastCompletedDate = today; } } } else { if(tk.freq !== 'once') { tk.streak = Math.max(0, (tk.streak || 0) - 1); tk.lastCompletedDate = null; } } Storage.saveTasks(); } };
+    const deleteTask = (id) => { if(confirm(lang==='es'?'¿Borrar tarea?':'Delete task?')) { tasks = tasks.filter(t => t.id !== id); Storage.saveTasks(); } };
     const moveTask = (id, newStatus) => { const tk = tasks.find(x => x.id === id); if(tk) { tk.status = newStatus; Storage.saveTasks(); } };
     
     const playDing = () => { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime); gain.gain.setValueAtTime(1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1.5); } catch(e) {} };
@@ -125,8 +221,9 @@ const App = (() => {
             Object.values(g).forEach(el => { if(el) el.innerHTML = ''; }); let enBandeja = 0;
 
             const createCardDOM = (task) => {
-                const isHabitDone = task.isHabit && task.completed; // 🔥 LOGICA DE HÁBITOS
+                const isHabitDone = (task.freq && task.freq !== 'once') && task.completed;
                 let energyLabel = task.energy === "alta" ? "High" : (task.energy === "baja" ? "Low" : "Normal");
+                let freqLabel = task.freq === 'daily' ? 'Daily' : (task.freq === 'weekly' ? 'Weekly' : '');
 
                 const card = document.createElement('div'); card.className = `kanban-card ${isHabitDone ? 'habit-done' : ''}`; card.draggable = true; 
                 card.ondragstart = (e) => App.dragStart(e, task.id); card.ondragend = (e) => e.target.classList.remove('dragging');
@@ -135,9 +232,8 @@ const App = (() => {
                     <div style="font-size:0.75rem; margin-bottom: 5px; font-weight:600; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <span class="pill ${task.category}">${task.category.toUpperCase()}</span>
                         <span style="color:var(--text-muted);">${task.time}m</span>
-                        <span style="color:var(--text-muted);">${energyLabel}</span>
                         <span style="color:var(--accent-blue);">${task.folder || 'General'}</span>
-                        ${task.isHabit ? `<span class="streak-badge">${t('js_streak')}: ${task.streak || 0}</span>` : ''}
+                        ${freqLabel ? `<span class="streak-badge">${freqLabel} | ${t('js_streak')}: ${task.streak || 0}</span>` : ''}
                     </div>
                     <h4>${task.title}</h4>
                     <select style="margin:10px 0; width:100%;" onchange="App.moveTask('${task.id}', this.value)" ${isHabitDone ? 'disabled' : ''}>
@@ -155,8 +251,7 @@ const App = (() => {
             tasks.forEach(task => {
                 if (currentEnergyFilter !== 'all' && task.energy !== currentEnergyFilter && !task.completed) return;
 
-                // TAREAS NORMALES (No Hábitos) AL HISTORIAL
-                if (task.completed && !task.isHabit) {
+                if (task.completed && (!task.freq || task.freq === 'once')) {
                     if(g.history) g.history.innerHTML += `
                         <div class="history-item">
                             <div style="display:flex; flex-direction:column;"><span style="text-decoration:line-through; color:var(--text-muted); font-weight:500;">${task.title}</span><span style="font-size:0.75rem; color:var(--cta-green);">+${task.time} min</span></div>
@@ -165,7 +260,6 @@ const App = (() => {
                     return;
                 }
 
-                // SI ESTAMOS AQUÍ, ES UNA TAREA PENDIENTE O UN HÁBITO COMPLETADO (A LA PIZARRA)
                 const card = createCardDOM(task);
                 if (task.status === 'bandeja') { if(g.bandeja) g.bandeja.appendChild(card); enBandeja++; }
                 else if (task.status === 'later') { if(g.later) g.later.appendChild(card); }
@@ -199,7 +293,7 @@ const App = (() => {
         });
     };
 
-    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder, deleteFolder, saveApiKey, toggleLanguage };
+    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder, deleteFolder, saveApiKey, toggleLanguage, toggleDaysSelector, closeEditModal, saveEditedTask };
 })();
 
 window.App = App; document.addEventListener('DOMContentLoaded', App.init); if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(e=>e); }); }
