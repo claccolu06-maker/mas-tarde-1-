@@ -21,6 +21,7 @@ const dict = {
         proj_sub: "Tareas asignadas a este proyecto.", focus_badge: "SESIÓN DE ENFOQUE", btn_material: "Abrir Material", btn_end_focus: "Finalizar Sesión",
         edit_title: "Editar Tarea", edit_name: "Nombre de la tarea", edit_time: "Tiempo (min)", edit_energy: "Energía", btn_cancel: "Cancelar", btn_save_changes: "Guardar Cambios",
         habits_title: "Rutinas de Hoy", habits_empty: "No hay rutinas programadas para hoy.",
+        notif_title: "Centro de Avisos",
         js_exec: "Ejecutar", js_edit: "Editar", js_comp: "Completar", js_del: "Borrar", js_undo: "Deshacer", js_tasks: "tareas",
         js_rank1: "Analista", js_rank2: "Asociado", js_rank3: "Mánager", js_rank4: "Ejecutivo", js_streak: "Racha",
         js_opt1: "Bandeja", js_opt2: "Algún día", js_opt3: "Esta Semana", js_opt4: "Hacer Hoy",
@@ -39,6 +40,7 @@ const dict = {
         proj_sub: "Tasks assigned to this project.", focus_badge: "FOCUS SESSION", btn_material: "Open Material", btn_end_focus: "End Session",
         edit_title: "Edit Task", edit_name: "Task Name", edit_time: "Time (min)", edit_energy: "Energy", btn_cancel: "Cancel", btn_save_changes: "Save Changes",
         habits_title: "Today's Routines", habits_empty: "No routines scheduled for today.",
+        notif_title: "Notification Center",
         js_exec: "Execute", js_edit: "Edit", js_comp: "Complete", js_del: "Delete", js_undo: "Undo", js_tasks: "tasks",
         js_rank1: "Analyst", js_rank2: "Associate", js_rank3: "Manager", js_rank4: "Executive", js_streak: "Streak",
         js_opt1: "Inbox", js_opt2: "Backlog", js_opt3: "This Week", js_opt4: "Today",
@@ -48,49 +50,62 @@ const dict = {
 
 const App = (() => {
     let tasks = []; let folders = ['General']; let currentActiveFolder = 'General';
-    let tree = { health: 100, lastCheck: '' }; // 🔥 NUEVO: Estado del Árbol
+    let tree = { health: 100, lastCheck: '' }; 
+    let notifs = []; // 🔥 NUEVO: Historial de notificaciones
+    let unreadNotifs = 0; // 🔥 Contador de notificaciones sin leer
     let focusInterval; let myChart = null; let draggedTaskId = null; let currentEnergyFilter = 'all';
     let lang = localStorage.getItem('smartLang') || 'es';
 
     const t = (key) => dict[lang][key] || key;
-    const applyTranslations = () => { document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); }); document.getElementById('langBtn').textContent = lang === 'es' ? '🇬🇧 English' : '🇪🇸 Español'; UI.updateStats(); UI.render(); };
+    const applyTranslations = () => { document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); }); document.getElementById('langBtn').textContent = lang === 'es' ? '🇬🇧 English' : '🇪🇸 Español'; UI.updateStats(); UI.render(); UI.renderNotifs(); };
     const toggleLanguage = () => { lang = lang === 'es' ? 'en' : 'es'; localStorage.setItem('smartLang', lang); applyTranslations(); };
     const showToast = (msg) => { const c = document.getElementById('toast-container'); if(!c) return; const toast = document.createElement('div'); toast.className = 'toast'; toast.textContent = msg; c.appendChild(toast); setTimeout(() => toast.remove(), 3000); };
     
+    // --- GESTOR DE NOTIFICACIONES ---
+    const addNotif = (msg, type = 'info') => {
+        const d = new Date(); const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        notifs.unshift({ msg, time: timeStr, type, id: Date.now() });
+        if(notifs.length > 20) notifs.pop(); // Guardar solo las últimas 20
+        unreadNotifs++;
+        Storage.saveNotifs(); UI.renderNotifs();
+    };
+
+    const toggleNotifPanel = () => {
+        const p = document.getElementById('notifPanel');
+        p.classList.toggle('hidden');
+        if(!p.classList.contains('hidden')) { unreadNotifs = 0; Storage.saveNotifs(); UI.renderNotifs(); }
+    };
+
+    const clearNotifs = () => { notifs = []; unreadNotifs = 0; Storage.saveNotifs(); UI.renderNotifs(); };
+
+    // --- LÓGICA CORE ---
     const getLocalDate = (offsetDays = 0) => { const d = new Date(); d.setDate(d.getDate() + offsetDays); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
     
-    // --- LÓGICA DE DÍAS Y SALUD DEL ÁRBOL ---
     const checkDailyRoutinesAndTree = () => {
         const todayStr = getLocalDate(0); const yesterdayStr = getLocalDate(-1); const currentDayNum = new Date().getDay().toString(); 
         let needsTaskSave = false; let needsTreeSave = false;
 
-        // 1. Revisar penalizaciones del Árbol (Tareas atrasadas en Hacer Hoy)
         if (!tree.lastCheck) { tree.lastCheck = todayStr; needsTreeSave = true; }
         if (tree.lastCheck !== todayStr) {
             const neglectedTasks = tasks.filter(t => !t.completed && t.status === 'today').length;
-            if (neglectedTasks > 0) {
-                tree.health = Math.max(0, tree.health - (neglectedTasks * 15)); // Castigo de 15% por tarea abandonada
+            if (neglectedTasks > 0) { 
+                tree.health = Math.max(0, tree.health - (neglectedTasks * 15)); 
+                addNotif(lang==='es' ? `El Árbol perdió vida por ${neglectedTasks} tareas atrasadas.` : `Tree lost health due to ${neglectedTasks} overdue tasks.`, 'danger');
             }
-            tree.lastCheck = todayStr;
-            needsTreeSave = true;
+            tree.lastCheck = todayStr; needsTreeSave = true;
         }
 
-        // 2. Revisar Hábitos
         tasks.forEach(task => {
             if (task.completed && task.freq && task.freq !== 'once') {
                 let shouldRevive = false;
                 if (task.freq === 'daily' && task.lastCompletedDate !== todayStr) shouldRevive = true;
                 else if (task.freq === 'weekly' && task.days && task.days.includes(currentDayNum) && task.lastCompletedDate !== todayStr) shouldRevive = true;
 
-                if (shouldRevive) {
-                    task.completed = false; task.status = 'today'; needsTaskSave = true;
-                    if (task.lastCompletedDate !== yesterdayStr && task.lastCompletedDate) task.streak = 0;
-                }
+                if (shouldRevive) { task.completed = false; task.status = 'today'; needsTaskSave = true; if (task.lastCompletedDate !== yesterdayStr && task.lastCompletedDate) task.streak = 0; }
             }
         });
 
-        if (needsTaskSave) Storage.saveTasks();
-        if (needsTreeSave) Storage.saveTree();
+        if (needsTaskSave) Storage.saveTasks(); if (needsTreeSave) Storage.saveTree();
     };
 
     const toggleDaysSelector = (mode) => { const sel = document.getElementById(mode === 'new' ? 'freqInput' : 'editFreqInput'); const daysDiv = document.getElementById(mode === 'new' ? 'daysSelector_new' : 'daysSelector_edit'); if (sel.value === 'weekly') { daysDiv.classList.remove('hidden'); } else { daysDiv.classList.add('hidden'); } };
@@ -99,18 +114,22 @@ const App = (() => {
         saveTasks: () => { if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/tasks'), tasks); },
         saveFolders: () => { if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/folders'), folders); },
         saveTree: () => { if(currentUser) set(ref(db, 'users/' + currentUser.uid + '/tree'), tree); },
+        saveNotifs: () => { localStorage.setItem('smartNotifs', JSON.stringify(notifs)); localStorage.setItem('smartUnread', unreadNotifs); },
         listen: () => {
             if(currentUser) {
                 onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => { const data = snapshot.val(); tasks = data ? (Array.isArray(data) ? data.filter(x=>x) : Object.values(data).filter(x=>x)) : []; checkDailyRoutinesAndTree(); UI.render(); });
                 onValue(ref(db, 'users/' + currentUser.uid + '/folders'), (snapshot) => { const data = snapshot.val(); if (data) folders = Array.isArray(data) ? data : Object.values(data); UI.renderFolders(); });
                 onValue(ref(db, 'users/' + currentUser.uid + '/tree'), (snapshot) => { const data = snapshot.val(); if (data) { tree = data; checkDailyRoutinesAndTree(); UI.updateStats(); } else { Storage.saveTree(); } });
+                const savedNotifs = localStorage.getItem('smartNotifs'); if(savedNotifs) notifs = JSON.parse(savedNotifs);
+                const savedUnread = localStorage.getItem('smartUnread'); if(savedUnread) unreadNotifs = parseInt(savedUnread);
+                UI.renderNotifs();
             }
         }
     };
 
     const switchTab = (tab, btn) => { document.querySelectorAll('.tab-content').forEach(t => { t.classList.remove('active', 'hidden'); t.style.display = 'none'; }); const targetTab = document.getElementById(`tab-${tab}`); if(targetTab) { targetTab.classList.add('active'); targetTab.style.display = 'block'; } document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); if(tab === 'historial') setTimeout(UI.renderChart, 100); };
-    const addFolder = () => { const name = prompt(lang === 'es' ? "Nombre del proyecto:" : "Project name:"); if(name && name.trim() !== "") { if(!folders.includes(name.trim())) { folders.push(name.trim()); Storage.saveFolders(); showToast(lang === 'es' ? "Creado" : "Created"); } else alert("Ya existe."); } };
-    const deleteFolder = (folderName) => { if(folderName === 'General') return; if(confirm(`Delete project "${folderName}"?`)) { let needsTaskSave = false; tasks.forEach(t => { if(t.folder === folderName) { t.folder = 'General'; needsTaskSave = true; } }); if(needsTaskSave) Storage.saveTasks(); folders = folders.filter(f => f !== folderName); Storage.saveFolders(); if(currentActiveFolder === folderName) { currentActiveFolder = 'General'; document.getElementById('currentFolderName').textContent = `General`; switchTab('bandeja', document.querySelector('.nav-btn')); } UI.renderFolders(); UI.render(); } };
+    const addFolder = () => { const name = prompt(lang === 'es' ? "Nombre del proyecto:" : "Project name:"); if(name && name.trim() !== "") { if(!folders.includes(name.trim())) { folders.push(name.trim()); Storage.saveFolders(); addNotif(lang==='es'?`Proyecto "${name}" creado.`:`Project "${name}" created.`, 'success'); } else alert("Ya existe."); } };
+    const deleteFolder = (folderName) => { if(folderName === 'General') return; if(confirm(`Delete project "${folderName}"?`)) { let needsTaskSave = false; tasks.forEach(t => { if(t.folder === folderName) { t.folder = 'General'; needsTaskSave = true; } }); if(needsTaskSave) Storage.saveTasks(); folders = folders.filter(f => f !== folderName); Storage.saveFolders(); if(currentActiveFolder === folderName) { currentActiveFolder = 'General'; document.getElementById('currentFolderName').textContent = `General`; switchTab('bandeja', document.querySelector('.nav-btn')); } addNotif(lang==='es'?`Proyecto "${folderName}" eliminado.`:`Project "${folderName}" deleted.`, 'warning'); UI.renderFolders(); UI.render(); } };
     const openFolder = (name, btn) => { currentActiveFolder = name; document.getElementById('currentFolderName').textContent = name; switchTab('carpetas', btn); UI.render(); };
     const setEnergyFilter = (level, btn) => { currentEnergyFilter = level; document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); UI.render(); };
     const checkSharedLinks = () => { const urlParams = new URLSearchParams(window.location.search); const t = urlParams.get('title') || urlParams.get('text'); const u = urlParams.get('url'); if (t || u) { if (document.getElementById('titleInput')) document.getElementById('titleInput').value = t || ''; if (document.getElementById('urlInput')) document.getElementById('urlInput').value = u || ''; window.history.replaceState({}, document.title, window.location.pathname); showToast("Link captured."); } };
@@ -128,12 +147,14 @@ const App = (() => {
             if (selectedDays.length === 0) { alert(lang==='es'?"Selecciona al menos un día.":"Select at least one day."); return; }
         }
         
+        const title = document.getElementById('titleInput').value;
         tasks.unshift({ 
-            id: Date.now().toString(), url: document.getElementById('urlInput').value, title: document.getElementById('titleInput').value, 
+            id: Date.now().toString(), url: document.getElementById('urlInput').value, title: title, 
             category: document.getElementById('categoryInput').value, energy: energyVal, folder: folderVal, time: parseInt(document.getElementById('timeInput').value), 
             freq: freqVal, days: selectedDays, streak: 0, lastCompletedDate: null, completedDates: [], completed: false, status: 'bandeja' 
         });
-        Storage.saveTasks(); document.getElementById('taskForm').reset(); document.getElementById('folderInput').value = folderVal; toggleDaysSelector('new'); showToast(lang === 'es' ? "Guardado" : "Saved");
+        Storage.saveTasks(); document.getElementById('taskForm').reset(); document.getElementById('folderInput').value = folderVal; toggleDaysSelector('new'); 
+        showToast(lang === 'es' ? "Guardado" : "Saved");
     };
 
     const editTask = (id) => { 
@@ -168,7 +189,6 @@ const App = (() => {
                 tk.completedAt = today; 
                 if (!tk.completedDates.includes(today)) tk.completedDates.push(today);
                 
-                // CURAR AL ÁRBOL (+10% Salud al completar)
                 tree.health = Math.min(100, tree.health + 10);
                 Storage.saveTree();
 
@@ -177,10 +197,7 @@ const App = (() => {
             } 
             else { 
                 tk.completedDates = tk.completedDates.filter(d => d !== today); 
-                // Quitar recompensa si se deshace
-                tree.health = Math.max(0, tree.health - 10);
-                Storage.saveTree();
-                
+                tree.health = Math.max(0, tree.health - 10); Storage.saveTree();
                 if(tk.freq && tk.freq !== 'once') { tk.streak = Math.max(0, (tk.streak || 0) - 1); tk.lastCompletedDate = null; } 
             } 
             Storage.saveTasks(); 
@@ -190,11 +207,78 @@ const App = (() => {
     const deleteTask = (id) => { if(confirm(lang==='es'?'¿Borrar tarea?':'Delete task?')) { tasks = tasks.filter(t => t.id !== id); Storage.saveTasks(); } };
     const moveTask = (id, newStatus) => { const tk = tasks.find(x => x.id === id); if(tk) { tk.status = newStatus; Storage.saveTasks(); } };
     
+    // --- RELOJ FOCUS MEJORADO (CON CONFETI Y SIN ALERT) ---
     const playDing = () => { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime); gain.gain.setValueAtTime(1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1.5); } catch(e) {} };
-    const startFocus = (id) => { const task = tasks.find(t => t.id === id); if(!task) return; if ("Notification" in window && Notification.permission === "default") { Notification.requestPermission(); } document.getElementById('focusTitle').textContent = task.title; document.getElementById('focusOverlay').classList.remove('hidden'); const urlBtn = document.getElementById('focusUrlBtn'); if (urlBtn) { if (task.url && task.url.trim() !== "") { let finalUrl = task.url.trim(); if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl; urlBtn.href = finalUrl; urlBtn.style.display = 'inline-block'; } else { urlBtn.style.display = 'none'; } } const endTime = Date.now() + ((task.time || 25) * 60 * 1000); const updateTimer = () => { const remaining = Math.round((endTime - Date.now()) / 1000); if (remaining <= 0) { clearInterval(focusInterval); document.getElementById('focusTimer').textContent = "00:00"; playDing(); if ("Notification" in window && Notification.permission === "granted") { new Notification("Session Complete", { body: task.title }); } alert('Complete!'); stopFocus(); return; } document.getElementById('focusTimer').textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`; }; updateTimer(); focusInterval = setInterval(updateTimer, 1000); };
-    const stopFocus = () => { clearInterval(focusInterval); document.getElementById('focusOverlay').classList.add('hidden'); };
+    
+    const startFocus = (id) => { 
+        const task = tasks.find(t => t.id === id); if(!task) return; 
+        if ("Notification" in window && Notification.permission === "default") { Notification.requestPermission(); } 
+        
+        const overlay = document.getElementById('focusOverlay');
+        overlay.classList.remove('hidden', 'finished'); // Limpiar estado anterior
+        document.getElementById('focusTitle').textContent = task.title; 
+        
+        const urlBtn = document.getElementById('focusUrlBtn'); 
+        if (urlBtn) { if (task.url && task.url.trim() !== "") { let finalUrl = task.url.trim(); if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl; urlBtn.href = finalUrl; urlBtn.style.display = 'inline-block'; } else { urlBtn.style.display = 'none'; } } 
+        
+        const endTime = Date.now() + ((task.time || 25) * 60 * 1000); 
+        
+        const updateTimer = () => { 
+            const remaining = Math.round((endTime - Date.now()) / 1000); 
+            if (remaining <= 0) { 
+                clearInterval(focusInterval); 
+                document.getElementById('focusTimer').textContent = "00:00"; 
+                
+                playDing(); 
+                overlay.classList.add('finished'); // Fondo verde
+                document.getElementById('focusTitle').textContent = lang==='es' ? "¡Tiempo Terminado!" : "Time's Up!";
+                
+                // Notificación del Sistema (OS)
+                if ("Notification" in window && Notification.permission === "granted") { 
+                    new Notification("Focus Complete", { body: `Task finished: "${task.title}".`, icon: "./icon.png" }); 
+                } 
+                
+                // Notificación In-App (Campanita)
+                addNotif(lang==='es' ? `Completaste tu sesión de enfoque para: "${task.title}".` : `Focus session completed for: "${task.title}".`, 'success');
+                
+                // Confeti de Victoria
+                if (typeof confetti === "function") confetti({ particleCount: 200, spread: 100, origin: { y: 0.3 }, colors: ['#ffffff', '#16a34a'] });
+
+                // Ya no hay alert. El usuario pulsará "Finalizar Sesión" para salir.
+                return; 
+            } 
+            document.getElementById('focusTimer').textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`; 
+        }; 
+        updateTimer(); focusInterval = setInterval(updateTimer, 1000); 
+    };
+    
+    const stopFocus = () => { 
+        clearInterval(focusInterval); 
+        const overlay = document.getElementById('focusOverlay');
+        overlay.classList.add('hidden'); 
+        overlay.classList.remove('finished');
+    };
 
     const UI = {
+        renderNotifs: () => {
+            const list = document.getElementById('notifList'); const badge = document.getElementById('notifBadge');
+            if(badge) {
+                if(unreadNotifs > 0) { badge.textContent = unreadNotifs; badge.classList.remove('hidden'); }
+                else { badge.classList.add('hidden'); }
+            }
+            if(list) {
+                list.innerHTML = '';
+                if(notifs.length === 0) { list.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted); text-align:center;">${lang==='es'?'No hay notificaciones.':'No notifications.'}</p>`; return; }
+                notifs.forEach(n => {
+                    list.innerHTML += `
+                        <div class="notif-item ${n.type}">
+                            <div>${n.msg}</div>
+                            <span class="notif-time">${n.time}</span>
+                        </div>
+                    `;
+                });
+            }
+        },
         renderFolders: () => { const list = document.getElementById('folderList'); const select = document.getElementById('folderInput'); if(list) { list.innerHTML = ''; folders.forEach(f => { const folderItem = document.createElement('div'); folderItem.className = 'folder-item'; const btn = document.createElement('button'); btn.className = 'nav-btn'; btn.innerHTML = f; btn.onclick = function() { App.openFolder(f, this); }; folderItem.appendChild(btn); if(f !== 'General') { const delBtn = document.createElement('button'); delBtn.className = 'delete-folder-btn'; delBtn.innerHTML = '✕'; delBtn.onclick = (e) => { e.stopPropagation(); App.deleteFolder(f); }; folderItem.appendChild(delBtn); } list.appendChild(folderItem); }); } if(select) { select.innerHTML = ''; folders.forEach(f => { select.innerHTML += `<option value="${f}">${f}</option>`; }); } },
         updateStats: () => {
             const completed = tasks.filter(t => t.completed); const c = completed.length;
@@ -211,12 +295,9 @@ const App = (() => {
                 if(document.getElementById('userLevel')) { document.getElementById('userLevel').innerHTML = level; document.getElementById('userLevel').style.color = color; }
             }
 
-            // --- ACTUALIZAR EL ÁRBOL VISUALMENTE ---
             const treeIconEl = document.getElementById('treeIcon');
             if(treeIconEl) {
-                let isDead = tree.health <= 0;
-                let stageName, icon, nextXP, currentTierXP;
-                
+                let isDead = tree.health <= 0; let stageName, icon, nextXP, currentTierXP;
                 if (isDead) { stageName = t('tree_dead'); icon = '🥀'; nextXP = totalMins; currentTierXP = totalMins; }
                 else if (totalMins < 60) { stageName = t('tree_seed'); icon = '🌱'; nextXP = 60; currentTierXP = 0; }
                 else if (totalMins < 300) { stageName = t('tree_sprout'); icon = '🌿'; nextXP = 300; currentTierXP = 60; }
@@ -224,37 +305,22 @@ const App = (() => {
                 else { stageName = t('tree_oak'); icon = '🌲'; nextXP = totalMins; currentTierXP = totalMins; }
                 
                 const progressPercent = (nextXP === totalMins) ? 100 : Math.min(100, ((totalMins - currentTierXP) / (nextXP - currentTierXP)) * 100);
-                
-                treeIconEl.textContent = icon;
-                document.getElementById('treeStageName').textContent = stageName;
-                document.getElementById('treeProgressText').textContent = isDead ? `0 XP` : (nextXP === totalMins ? `MAX` : `${totalMins} / ${nextXP} XP`);
-                
-                const fill = document.getElementById('treeProgressFill');
-                fill.style.width = `${progressPercent}%`; fill.style.background = isDead ? 'var(--danger-red)' : 'var(--cta-green)';
-                
-                const healthEl = document.getElementById('treeHealth');
-                healthEl.textContent = `❤️ ${tree.health}%`;
-                healthEl.className = tree.health > 50 ? 'health-good' : (tree.health > 0 ? 'health-warn' : 'health-dead');
+                treeIconEl.textContent = icon; document.getElementById('treeStageName').textContent = stageName; document.getElementById('treeProgressText').textContent = isDead ? `0 XP` : (nextXP === totalMins ? `MAX` : `${totalMins} / ${nextXP} XP`);
+                const fill = document.getElementById('treeProgressFill'); fill.style.width = `${progressPercent}%`; fill.style.background = isDead ? 'var(--danger-red)' : 'var(--cta-green)';
+                const healthEl = document.getElementById('treeHealth'); healthEl.textContent = `❤️ ${tree.health}%`; healthEl.className = tree.health > 50 ? 'health-good' : (tree.health > 0 ? 'health-warn' : 'health-dead');
             }
-
             UI.renderHeatmap(); 
         },
         renderHeatmap: () => {
-            const container = document.getElementById('heatmapContainer'); if(!container) return;
-            const counts = {};
-            tasks.forEach(task => {
-                if(task.completedDates && Array.isArray(task.completedDates)) { task.completedDates.forEach(d => { counts[d] = (counts[d] || 0) + 1; }); } 
-                else if(task.completed) { const fallbackDate = task.completedAt || getLocalDate(0); counts[fallbackDate] = (counts[fallbackDate] || 0) + 1; }
-            });
+            const container = document.getElementById('heatmapContainer'); if(!container) return; const counts = {};
+            tasks.forEach(task => { if(task.completedDates && Array.isArray(task.completedDates)) { task.completedDates.forEach(d => { counts[d] = (counts[d] || 0) + 1; }); } else if(task.completed) { const fallbackDate = task.completedAt || getLocalDate(0); counts[fallbackDate] = (counts[fallbackDate] || 0) + 1; } });
             let html = '';
             for (let col = 0; col < 12; col++) {
                 html += '<div class="heatmap-col">';
                 for (let row = 0; row < 7; row++) {
-                    const daysAgo = (11 - col) * 7 + (6 - row);
-                    const dObj = new Date(); dObj.setDate(dObj.getDate() - daysAgo);
+                    const daysAgo = (11 - col) * 7 + (6 - row); const dObj = new Date(); dObj.setDate(dObj.getDate() - daysAgo);
                     const dStr = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
-                    const c = counts[dStr] || 0; let lvl = 0;
-                    if(c === 1) lvl = 1; else if(c === 2) lvl = 2; else if(c >= 3 && c <= 4) lvl = 3; else if(c >= 5) lvl = 4;
+                    const c = counts[dStr] || 0; let lvl = 0; if(c === 1) lvl = 1; else if(c === 2) lvl = 2; else if(c >= 3 && c <= 4) lvl = 3; else if(c >= 5) lvl = 4;
                     html += `<div class="heatmap-cell" data-level="${lvl}" title="${c} ${t('js_tasks')} (${dStr})"></div>`;
                 }
                 html += '</div>';
@@ -344,10 +410,10 @@ const App = (() => {
     const saveApiKey = () => { const key = document.getElementById('apiKeyInput').value.trim(); if(key) { localStorage.setItem('aiApiKey', key); showToast("Key Saved"); } else { localStorage.removeItem('aiApiKey'); showToast("Key Removed"); } };
     const askGemini = async () => { const apiKey = localStorage.getItem('aiApiKey'); if (!apiKey) { alert("API Key required."); switchTab('ajustes', document.querySelectorAll('.nav-btn')[3]); return; } const aiCard = document.getElementById('aiResponseCard'); const aiText = document.getElementById('aiResponseText'); const pendingTasks = tasks.filter(t => !t.completed); if(pendingTasks.length === 0) { showToast("No tasks available."); return; } aiCard.classList.remove('hidden'); aiText.innerHTML = '<i>Processing workload data...</i>'; const tasksString = pendingTasks.map(t => `- [${t.status.toUpperCase()}] ${t.title} (${t.time}m, Energy: ${t.energy})`).join('\n'); const promptSystem = `You are an Executive Assistant. Your goal is to maximize efficiency. Recommend EXACTLY ONE task from the list. Be concise, professional, no emojis. Provide rationale. Respond in ${lang === 'es' ? 'Spanish' : 'English'}.`; const promptUser = `Energy capacity: ${currentEnergyFilter}. Pending tasks:\n${tasksString}`; try { const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: [{ role: "system", content: promptSystem }, { role: "user", content: promptUser }] }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error?.message || "Server Error."); } const data = await response.json(); const aiResponse = data.choices[0].message.content; aiText.innerHTML = ''; let i = 0; const typeWriter = setInterval(() => { if(i < aiResponse.length) { aiText.innerHTML += aiResponse.charAt(i); i++; } else { clearInterval(typeWriter); } }, 15); } catch (error) { console.error(error); aiText.innerHTML = `<span style="color:var(--danger-red)">System Error: ${error.message}</span>`; } };
     const toggleTheme = () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); } else { html.setAttribute('data-theme', 'dark'); } UI.renderChart(); };
-    const clearAllData = () => { if(confirm("Format database?")) { tasks = []; folders = ['General']; tree = { health: 100, lastCheck: '' }; Storage.saveTasks(); Storage.saveFolders(); Storage.saveTree(); showToast("Formatted."); } };
+    const clearAllData = () => { if(confirm("Format database?")) { tasks = []; folders = ['General']; tree = { health: 100, lastCheck: '' }; notifs = []; unreadNotifs = 0; Storage.saveTasks(); Storage.saveFolders(); Storage.saveTree(); Storage.saveNotifs(); showToast("Formatted."); UI.renderNotifs(); } };
     const exportData = () => { if(tasks.length===0) return; const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks)); a.download = "backup.json"; document.body.appendChild(a); a.click(); a.remove(); };
     let isLoggingIn = false; const login = async () => { if(isLoggingIn) return; isLoggingIn = true; try { await signInWithPopup(auth, provider); } catch (error) { if(error.code !== 'auth/cancelled-popup-request') alert("Auth Error: " + error.message); } finally { isLoggingIn = false; } };
-    const logout = () => signOut(auth).then(() => { tasks = []; tree = { health: 100, lastCheck: '' }; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
+    const logout = () => signOut(auth).then(() => { tasks = []; tree = { health: 100, lastCheck: '' }; notifs = []; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
 
     const init = () => {
         if(document.getElementById('taskForm')) document.getElementById('taskForm').addEventListener('submit', addTask);
@@ -361,7 +427,7 @@ const App = (() => {
         });
     };
 
-    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder, deleteFolder, saveApiKey, toggleLanguage, toggleDaysSelector, closeEditModal, saveEditedTask };
+    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder, deleteFolder, saveApiKey, toggleLanguage, toggleDaysSelector, closeEditModal, saveEditedTask, toggleNotifPanel, clearNotifs };
 })();
 
 window.App = App; document.addEventListener('DOMContentLoaded', App.init); if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(e=>e); }); }
