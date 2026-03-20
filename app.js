@@ -14,9 +14,9 @@ const dict = {
         filt_all: "Todas", filt_high: "Alta", filt_med: "Normal", filt_low: "Baja", empty_title: "Bandeja Vacía", empty_sub: "Añade una tarea para comenzar.",
         board_title: "Pizarra", board_sub: "Organiza y ejecuta tus tareas.", btn_ai: "Analizar mi carga de trabajo", ai_name: "Asistente Ejecutivo:",
         col_later: "Algún día", col_week: "Esta Semana", col_today: "Hacer Hoy", stat_title: "Analítica", stat_sub: "Métricas de rendimiento.",
-        stat_rank: "Rango Actual", stat_time: "Tiempo Invertido", stat_done: "Completadas", stat_dist: "Distribución", stat_log: "Registro de Actividad", stat_heatmap: "Mapa de Constancia (Últimas 12 semanas)",
+        stat_rank: "Rango Actual", stat_time: "Tiempo Invertido", stat_done: "Completadas", stat_dist: "Distribución", stat_log: "Registro de Actividad", stat_heatmap: "Mapa de Constancia",
         set_title: "Ajustes", set_sub: "Configura tu entorno.", set_ai: "Integración IA (Groq)", set_ai_sub: "Introduce tu API Key para activar el asistente.",
-        btn_save_key: "Guardar Configuración", set_data: "Gestión de Datos", set_data_sub: "Exporta tus datos o formatea el sistema.", btn_format: "Formatear BD",
+        btn_save_key: "Guardar Llave", set_data: "Gestión de Datos", set_data_sub: "Exporta tus datos o formatea el sistema.", btn_format: "Formatear BD",
         proj_sub: "Tareas asignadas a este proyecto.", focus_badge: "SESIÓN DE ENFOQUE", btn_material: "Abrir Material", btn_end_focus: "Finalizar Sesión",
         edit_title: "Editar Tarea", edit_name: "Nombre de la tarea", edit_time: "Tiempo (min)", edit_energy: "Energía", btn_cancel: "Cancelar", btn_save_changes: "Guardar Cambios",
         habits_title: "Rutinas de Hoy", habits_empty: "No hay rutinas programadas para hoy.", notif_title: "Centro de Avisos", tree_title: "Árbol del Foco",
@@ -34,9 +34,9 @@ const dict = {
         filt_all: "All", filt_high: "High", filt_med: "Normal", filt_low: "Low", empty_title: "Inbox is Empty", empty_sub: "Add a task to start.",
         board_title: "Board", board_sub: "Organize and execute tasks.", btn_ai: "Analyze my schedule", ai_name: "Executive Assistant:",
         col_later: "Backlog", col_week: "This Week", col_today: "Today", stat_title: "Analytics", stat_sub: "Performance metrics.",
-        stat_rank: "Current Rank", stat_time: "Time Invested", stat_done: "Completed", stat_dist: "Distribution", stat_log: "Activity Log", stat_heatmap: "Consistency Map (Last 12 weeks)",
+        stat_rank: "Current Rank", stat_time: "Time Invested", stat_done: "Completed", stat_dist: "Distribution", stat_log: "Activity Log", stat_heatmap: "Consistency Map",
         set_title: "Settings", set_sub: "Manage your workspace.", set_ai: "AI Integration (Groq)", set_ai_sub: "Provide your API Key to enable assistant.",
-        btn_save_key: "Save Configuration", set_data: "Data Management", set_data_sub: "Export or format your database.", btn_format: "Format Database",
+        btn_save_key: "Save Key", set_data: "Data Management", set_data_sub: "Export or format your database.", btn_format: "Format Database",
         proj_sub: "Tasks assigned to this project.", focus_badge: "FOCUS SESSION", btn_material: "Open Material", btn_end_focus: "End Session",
         edit_title: "Edit Task", edit_name: "Task Name", edit_time: "Time (min)", edit_energy: "Energy", btn_cancel: "Cancel", btn_save_changes: "Save Changes",
         habits_title: "Today's Routines", habits_empty: "No routines scheduled for today.", notif_title: "Notification Center", tree_title: "Focus Tree",
@@ -136,9 +136,9 @@ const App = (() => {
 
     const openConfirmModal = (actionType, idOrName) => {
         const modal = document.getElementById('confirmModal'); const titleEl = document.getElementById('confirmTitle'); const textEl = document.getElementById('confirmText');
-        if (actionType === 'delete_task') { titleEl.textContent = t('conf_del_task'); textEl.textContent = t('conf_del_task_sub'); confirmActionCallback = () => { tasks = tasks.filter(t => t.id !== idOrName); Storage.saveTasks(); closeConfirmModal(); }; } 
+        if (actionType === 'delete_task') { titleEl.textContent = t('conf_del_task'); textEl.textContent = t('conf_del_task_sub'); confirmActionCallback = () => { tasks = tasks.filter(t => t.id !== idOrName); Storage.saveTasks(); UI.render(); closeConfirmModal(); }; } 
         else if (actionType === 'delete_folder') { titleEl.textContent = t('conf_del_proj'); textEl.textContent = t('conf_del_proj_sub'); confirmActionCallback = () => { let needsTaskSave = false; tasks.forEach(t => { if(t.folder === idOrName) { t.folder = 'General'; needsTaskSave = true; } }); if(needsTaskSave) Storage.saveTasks(); folders = folders.filter(f => f !== idOrName); Storage.saveFolders(); if(currentActiveFolder === idOrName) { currentActiveFolder = 'General'; document.getElementById('currentFolderName').textContent = `General`; switchTab('bandeja', document.querySelector('.nav-btn')); } addNotif(lang==='es'?`Proyecto "${idOrName}" eliminado.`:`Project "${idOrName}" deleted.`, 'warning'); UI.renderFolders(); UI.render(); closeConfirmModal(); }; } 
-        else if (actionType === 'format') { titleEl.textContent = t('conf_format'); textEl.textContent = t('conf_format_sub'); confirmActionCallback = () => { tasks = []; folders = ['General']; tree = { health: 100, lastCheck: '' }; notifs = []; unreadNotifs = 0; Storage.saveTasks(); Storage.saveFolders(); Storage.saveTree(); Storage.saveNotifs(); showToast("Formatted."); UI.renderNotifs(); closeConfirmModal(); }; }
+        else if (actionType === 'format') { titleEl.textContent = t('conf_format'); textEl.textContent = t('conf_format_sub'); confirmActionCallback = () => { tasks = []; folders = ['General']; tree = { health: 100, lastCheck: '' }; notifs = []; unreadNotifs = 0; Storage.saveTasks(); Storage.saveFolders(); Storage.saveTree(); Storage.saveNotifs(); showToast("Formatted."); UI.renderNotifs(); UI.render(); closeConfirmModal(); }; }
         const btn = document.getElementById('confirmBtn'); btn.onclick = confirmActionCallback; modal.classList.remove('hidden');
     };
     const closeConfirmModal = () => { document.getElementById('confirmModal').classList.add('hidden'); confirmActionCallback = null; };
@@ -147,77 +147,13 @@ const App = (() => {
     const setEnergyFilter = (level, btn) => { currentEnergyFilter = level; document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); UI.render(); };
     const checkSharedLinks = () => { const urlParams = new URLSearchParams(window.location.search); const t = urlParams.get('title') || urlParams.get('text'); const u = urlParams.get('url'); if (t || u) { if (document.getElementById('titleInput')) document.getElementById('titleInput').value = t || ''; if (document.getElementById('urlInput')) document.getElementById('urlInput').value = u || ''; window.history.replaceState({}, document.title, window.location.pathname); showToast("Link captured."); } };
     
-    // --- 🔥 DRAG & DROP AVANZADO (FÍSICAS Y ORDENACIÓN POR PRIORIDAD) ---
-    const dragStart = (e, id) => { 
-        draggedTaskId = id; 
-        e.target.classList.add('dragging'); 
-        e.dataTransfer.setData('text/plain', id); 
-        e.dataTransfer.effectAllowed = 'move';
-    }; 
-    
-    // Calcula qué tarjeta de la columna está más cerca de tu ratón para abrir un hueco
-    const getDragAfterElement = (container, y) => {
-        const draggableElements = [...container.querySelectorAll('.kanban-card:not(.dragging)')];
-        return draggableElements.reduce((closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2;
-            if (offset < 0 && offset > closest.offset) { return { offset: offset, element: child }; } 
-            else { return closest; }
-        }, { offset: Number.NEGATIVE_INFINITY }).element;
-    };
-
-    const allowDrop = (e) => { 
-        e.preventDefault(); 
-        const col = e.target.closest('.kanban-column'); 
-        if(col) { 
-            col.classList.add('drag-over'); 
-            const container = col.querySelector('.kanban-cards') || col;
-            const afterElement = getDragAfterElement(container, e.clientY);
-            const draggable = document.querySelector('.dragging');
-            if(draggable) {
-                // Visualmente mueve la tarjeta en el DOM mientras arrastras (Estilo Trello)
-                if (afterElement == null) { container.appendChild(draggable); } 
-                else { container.insertBefore(draggable, afterElement); }
-            }
-        } 
-    }; 
-    
+    const dragStart = (e, id) => { draggedTaskId = id; e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; }; 
+    const getDragAfterElement = (container, y) => { const draggableElements = [...container.querySelectorAll('.kanban-card:not(.dragging)')]; return draggableElements.reduce((closest, child) => { const box = child.getBoundingClientRect(); const offset = y - box.top - box.height / 2; if (offset < 0 && offset > closest.offset) { return { offset: offset, element: child }; } else { return closest; } }, { offset: Number.NEGATIVE_INFINITY }).element; };
+    const allowDrop = (e) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) { col.classList.add('drag-over'); const container = col.querySelector('.kanban-cards') || col; const afterElement = getDragAfterElement(container, e.clientY); const draggable = document.querySelector('.dragging'); if(draggable) { if (afterElement == null) { container.appendChild(draggable); } else { container.insertBefore(draggable, afterElement); } } } }; 
     const dragLeave = (e) => { const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); }; 
+    const drop = (e, targetStatus) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); if(draggedTaskId) { const taskIndex = tasks.findIndex(t => t.id === draggedTaskId); if (taskIndex > -1) { const task = tasks.splice(taskIndex, 1)[0]; task.status = targetStatus; const draggable = document.querySelector(`[data-id='${draggedTaskId}']`); let insertIndex = tasks.length; if (draggable && draggable.nextElementSibling) { const nextId = draggable.nextElementSibling.getAttribute('data-id'); const nextIndex = tasks.findIndex(t => t.id === nextId); if (nextIndex > -1) insertIndex = nextIndex; } else { let lastFoundIdx = -1; for(let i = tasks.length - 1; i >= 0; i--){ if (tasks[i].status === targetStatus) { lastFoundIdx = i; break; } } insertIndex = lastFoundIdx > -1 ? lastFoundIdx + 1 : tasks.length; } tasks.splice(insertIndex, 0, task); Storage.saveTasks(); UI.render(); } draggedTaskId = null; } };
     
-    const drop = (e, targetStatus) => { 
-        e.preventDefault(); 
-        const col = e.target.closest('.kanban-column'); 
-        if(col) col.classList.remove('drag-over'); 
-        
-        if(draggedTaskId) { 
-            const taskIndex = tasks.findIndex(t => t.id === draggedTaskId);
-            if (taskIndex > -1) {
-                const task = tasks.splice(taskIndex, 1)[0]; // Quitamos la tarea de su sitio viejo
-                task.status = targetStatus; // Cambiamos la columna
-                
-                // Magia: Leemos el DOM para saber dónde la has soltado exactamente y calculamos el nuevo índice
-                const draggable = document.querySelector(`[data-id='${draggedTaskId}']`);
-                let insertIndex = tasks.length; 
-                
-                if (draggable && draggable.nextElementSibling) {
-                    const nextId = draggable.nextElementSibling.getAttribute('data-id');
-                    const nextIndex = tasks.findIndex(t => t.id === nextId);
-                    if (nextIndex > -1) insertIndex = nextIndex;
-                } else {
-                    let lastFoundIdx = -1;
-                    for(let i = tasks.length - 1; i >= 0; i--){
-                        if (tasks[i].status === targetStatus) { lastFoundIdx = i; break; }
-                    }
-                    insertIndex = lastFoundIdx > -1 ? lastFoundIdx + 1 : tasks.length;
-                }
-                
-                tasks.splice(insertIndex, 0, task); // Insertamos la tarea en su nueva posición prioritaria
-                Storage.saveTasks(); 
-            }
-            draggedTaskId = null; 
-        } 
-    };
-    
+    // --- AÑADIDO RÁPIDO ("QUICK ADD") ---
     const addTask = (e) => {
         e.preventDefault(); 
         const titleVal = document.getElementById('titleInput').value.trim();
@@ -238,15 +174,13 @@ const App = (() => {
             if (selectedDays.length === 0) { alert(lang==='es'?"Selecciona al menos un día.":"Select at least one day."); return; }
         }
         
-        // Se añade al principio (unshift) para que sea la prioridad 1
         tasks.unshift({ 
-            id: Date.now().toString(), url: urlVal, title: titleVal, 
-            category: catVal, energy: energyVal, folder: folderVal, time: timeVal, 
+            id: Date.now().toString(), url: urlVal, title: titleVal, category: catVal, energy: energyVal, folder: folderVal, time: timeVal, 
             freq: freqVal, days: selectedDays, streak: 0, lastCompletedDate: null, completedDates: [], completed: false, status: 'bandeja' 
         });
         Storage.saveTasks(); document.getElementById('taskForm').reset(); 
         if(document.getElementById('folderInput')) document.getElementById('folderInput').value = folderVal; 
-        toggleDaysSelector('new'); showToast(lang === 'es' ? "Tarea Guardada ⚡" : "Task Saved ⚡");
+        toggleDaysSelector('new'); UI.render(); showToast(lang === 'es' ? "Tarea Guardada ⚡" : "Task Saved ⚡");
     };
 
     const editTask = (id) => { 
@@ -270,6 +204,7 @@ const App = (() => {
         Storage.saveTasks(); UI.render(); closeEditModal(); showToast(lang==='es'?"Actualizada":"Updated");
     };
 
+    // --- 🔥 LA COMPLETACIÓN INSTANTÁNEA (Solución de "Doble Clic") ---
     const toggleComplete = (id) => { 
         const tk = tasks.find(x => x.id === id); 
         if(tk) { 
@@ -280,20 +215,23 @@ const App = (() => {
             if(tk.completed) { 
                 tk.completedAt = today; 
                 if (!tk.completedDates.includes(today)) tk.completedDates.push(today);
-                tree.health = Math.min(100, tree.health + 10); Storage.saveTree();
+                tree.health = Math.min(100, tree.health + 10); 
+                
                 if(tk.freq && tk.freq !== 'once') { if(tk.lastCompletedDate !== today) { tk.streak = (tk.streak || 0) + 1; tk.lastCompletedDate = today; } } 
                 if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#38bdf8', '#10b981'] });
-            } 
-            else { 
+            } else { 
                 tk.completedDates = tk.completedDates.filter(d => d !== today); 
-                tree.health = Math.max(0, tree.health - 10); Storage.saveTree();
+                tree.health = Math.max(0, tree.health - 10); 
                 if(tk.freq && tk.freq !== 'once') { tk.streak = Math.max(0, (tk.streak || 0) - 1); tk.lastCompletedDate = null; } 
             } 
+            // Magia Síncrona: Renderizamos ANTES de mandar a la nube para que sea instantáneo.
+            UI.render(); 
+            Storage.saveTree();
             Storage.saveTasks(); 
         } 
     };
 
-    const moveTask = (id, newStatus) => { const tk = tasks.find(x => x.id === id); if(tk) { tk.status = newStatus; Storage.saveTasks(); } };
+    const moveTask = (id, newStatus) => { const tk = tasks.find(x => x.id === id); if(tk) { tk.status = newStatus; Storage.saveTasks(); UI.render(); } };
     
     const playDing = () => { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime); gain.gain.setValueAtTime(1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1.5); } catch(e) {} };
     
@@ -388,12 +326,8 @@ const App = (() => {
             const createCardDOM = (task) => {
                 let energyLabel = task.energy === "alta" ? "High" : (task.energy === "baja" ? "Low" : "Normal");
                 const card = document.createElement('div'); card.className = `kanban-card`; card.draggable = true; 
-                
-                // 🔥 NUEVO: Etiqueta de ID para el motor físico de Drag & Drop
                 card.setAttribute('data-id', task.id);
-                
-                card.ondragstart = (e) => App.dragStart(e, task.id); 
-                card.ondragend = (e) => e.target.classList.remove('dragging');
+                card.ondragstart = (e) => App.dragStart(e, task.id); card.ondragend = (e) => e.target.classList.remove('dragging');
 
                 card.innerHTML = `
                     <div style="font-size:0.75rem; margin-bottom: 5px; font-weight:600; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -468,7 +402,7 @@ const App = (() => {
     const saveApiKey = () => { const key = document.getElementById('apiKeyInput').value.trim(); if(key) { localStorage.setItem('aiApiKey', key); showToast("Key Saved"); } else { localStorage.removeItem('aiApiKey'); showToast("Key Removed"); } };
     const askGemini = async () => { const apiKey = localStorage.getItem('aiApiKey'); if (!apiKey) { alert("API Key required."); switchTab('ajustes', document.querySelectorAll('.nav-btn')[3]); return; } const aiCard = document.getElementById('aiResponseCard'); const aiText = document.getElementById('aiResponseText'); const pendingTasks = tasks.filter(t => !t.completed); if(pendingTasks.length === 0) { showToast("No tasks available."); return; } aiCard.classList.remove('hidden'); aiText.innerHTML = '<i>Processing workload data...</i>'; const tasksString = pendingTasks.map(t => `- [${t.status.toUpperCase()}] ${t.title} (${t.time}m, Energy: ${t.energy})`).join('\n'); const promptSystem = `You are an Executive Assistant. Your goal is to maximize efficiency. Recommend EXACTLY ONE task from the list. Be concise, professional, no emojis. Provide rationale. Respond in ${lang === 'es' ? 'Spanish' : 'English'}.`; const promptUser = `Energy capacity: ${currentEnergyFilter}. Pending tasks:\n${tasksString}`; try { const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: [{ role: "system", content: promptSystem }, { role: "user", content: promptUser }] }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error?.message || "Server Error."); } const data = await response.json(); const aiResponse = data.choices[0].message.content; aiText.innerHTML = ''; let i = 0; const typeWriter = setInterval(() => { if(i < aiResponse.length) { aiText.innerHTML += aiResponse.charAt(i); i++; } else { clearInterval(typeWriter); } }, 15); } catch (error) { console.error(error); aiText.innerHTML = `<span style="color:var(--danger-red)">System Error: ${error.message}</span>`; } };
     const toggleTheme = () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); } else { html.setAttribute('data-theme', 'dark'); } UI.renderChart(); };
-    const clearAllData = () => { if(confirm("Format database?")) { tasks = []; folders = ['General']; tree = { health: 100, lastCheck: '' }; notifs = []; unreadNotifs = 0; Storage.saveTasks(); Storage.saveFolders(); Storage.saveTree(); Storage.saveNotifs(); showToast("Formatted."); UI.renderNotifs(); } };
+    const clearAllData = () => { if(confirm("Format database?")) { tasks = []; folders = ['General']; tree = { health: 100, lastCheck: '' }; notifs = []; unreadNotifs = 0; Storage.saveTasks(); Storage.saveFolders(); Storage.saveTree(); Storage.saveNotifs(); showToast("Formatted."); UI.renderNotifs(); UI.render(); } };
     const exportData = () => { if(tasks.length===0) return; const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks)); a.download = "backup.json"; document.body.appendChild(a); a.click(); a.remove(); };
     let isLoggingIn = false; const login = async () => { if(isLoggingIn) return; isLoggingIn = true; try { await signInWithPopup(auth, provider); } catch (error) { if(error.code !== 'auth/cancelled-popup-request') alert("Auth Error: " + error.message); } finally { isLoggingIn = false; } };
     const logout = () => signOut(auth).then(() => { tasks = []; tree = { health: 100, lastCheck: '' }; notifs = []; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
