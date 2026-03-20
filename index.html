@@ -16,6 +16,7 @@
 </head>
 <body>
 
+    <!-- PANTALLA DE LOGIN -->
     <div id="loginScreen" class="login-screen">
         <div class="login-card glass-panel">
             <div class="logo"><h1>Smart-Time Workspace</h1></div>
@@ -24,10 +25,11 @@
         </div>
     </div>
 
+    <!-- DASHBOARD PRINCIPAL -->
     <div id="mainDashboard" class="dashboard-layout hidden">
         
+        <!-- BARRA LATERAL -->
         <aside class="sidebar" style="position: relative;">
-            <!-- LOGO Y CAMPANITA -->
             <div class="logo" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h2 style="margin: 0;">Smart-Time</h2>
                 <button class="nav-btn" style="position: relative; padding: 5px 8px; font-size: 1.2rem;" onclick="App.toggleNotifPanel()">
@@ -64,9 +66,10 @@
             </div>
         </aside>
 
+        <!-- CONTENIDO PRINCIPAL -->
         <main class="main-content">
             
-            <!-- BANDEJA -->
+            <!-- 1. BANDEJA -->
             <section id="tab-bandeja" class="tab-content active">
                 <header class="tab-header"><h2 data-i18n="inbox_title">Bandeja de Entrada</h2><p data-i18n="inbox_sub">Captura tareas para procesarlas después.</p></header>
                 
@@ -87,6 +90,7 @@
                         <select id="energyInput" style="flex: 1; min-width: 100px;">
                             <option value="alta" data-i18n="en_high">Energía Alta</option><option value="media" selected data-i18n="en_med">Normal</option><option value="baja" data-i18n="en_low">Energía Baja</option>
                         </select>
+                        <!-- QUICK ADD: Tiempo no requerido -->
                         <input type="number" id="timeInput" placeholder="Min" min="1" style="flex: 1; max-width: 80px;" title="Si lo dejas vacío, se asignarán 15 minutos por defecto.">
                     </div>
                     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); width: 100%;">
@@ -122,7 +126,7 @@
                 <div id="tasksGrid" class="tasks-grid"></div>
             </section>
 
-            <!-- PIZARRA KANBAN -->
+            <!-- 2. PIZARRA -->
             <section id="tab-pizarra" class="tab-content hidden">
                 <header class="tab-header"><h2 data-i18n="board_title">Pizarra</h2><p data-i18n="board_sub">Organiza y ejecuta tus tareas.</p></header>
                 
@@ -166,8 +170,7 @@
                 </div>
             </section>
 
-            <!-- ANALÍTICA -->
-                       <!-- PESTAÑA 3: ANALÍTICA (Diseño alineado a 3 columnas) -->
+            <!-- 3. ANALÍTICA (3 COLUMNAS) -->
             <section id="tab-historial" class="tab-content hidden">
                 <header class="tab-header"><h2 data-i18n="stat_title">Analítica</h2><p data-i18n="stat_sub">Métricas de rendimiento e historial.</p></header>
                 <div class="metrics-grid" style="margin-bottom: 2rem;">
@@ -176,7 +179,7 @@
                     <div class="metric-card glass-panel"><h4 data-i18n="stat_done">Completadas</h4><div id="totalCompleted" class="metric-value">0</div></div>
                 </div>
                 
-                <!-- 🔥 NUEVO: GRID ALINEADO A 3 COLUMNAS -->
+                <!-- GRID ALINEADO A 3 COLUMNAS -->
                 <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; align-items: start;">
                     <div class="glass-panel" style="padding: 1.5rem;">
                         <h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_heatmap">Mapa de Constancia</h3>
@@ -193,22 +196,19 @@
                 </div>
             </section>
 
-            <!-- PESTAÑA 4: AJUSTES (Instrucciones de la IA) -->
+            <!-- 4. AJUSTES -->
             <section id="tab-ajustes" class="tab-content hidden">
                 <header class="tab-header"><h2 data-i18n="set_title">Ajustes</h2><p data-i18n="set_sub">Configura tu entorno de trabajo.</p></header>
                 <div class="settings-grid">
                     <div class="settings-card glass-panel profile-card">
-                        <div class="profile-header">
-                            <img id="userPhoto" src="" alt="Profile" class="profile-img">
-                            <div class="profile-info"><h3 id="userName">Cargando...</h3><p id="userEmail">usuario@correo.com</p></div>
-                        </div>
+                        <div class="profile-header"><img id="userPhoto" src="" alt="Profile" class="profile-img"><div class="profile-info"><h3 id="userName">Cargando...</h3><p id="userEmail">usuario@correo.com</p></div></div>
                     </div>
                     
                     <div class="settings-card glass-panel" style="border-left: 4px solid #a855f7;">
                         <h3 data-i18n="set_ai">Integración IA (Groq)</h3>
                         <p data-i18n="set_ai_sub">Introduce tu API Key para activar el asistente ejecutivo.</p>
                         
-                        <!-- 🔥 NUEVO: INSTRUCCIONES CLARAS PARA EL USUARIO -->
+                        <!-- INSTRUCCIONES CLARAS -->
                         <div style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem;">
                             <strong>¿Cómo conseguir tu llave 100% gratis en 1 minuto?</strong>
                             <ol style="margin-left: 1.2rem; margin-top: 0.5rem; color: var(--text-muted);">
@@ -235,9 +235,15 @@
                 </div>
             </section>
 
+            <!-- 5. CARPETAS -->
+            <section id="tab-carpetas" class="tab-content hidden">
+                <header class="tab-header"><h2 id="currentFolderName">General</h2><p data-i18n="proj_sub">Tareas asignadas a este proyecto.</p></header>
+                <div id="folderTasksGrid" class="tasks-grid"></div>
+            </section>
+        </main>
+    </div>
+
     <!-- ================= MODOS Y MODALES DE CRISTAL ================= -->
-    
-    <!-- MODO FOCUS -->
     <div id="focusOverlay" class="focus-overlay hidden">
         <div class="focus-content">
             <span class="focus-badge" data-i18n="focus_badge">SESIÓN DE ENFOQUE</span>
@@ -249,7 +255,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE EDICIÓN DE TAREAS -->
     <div id="editModal" class="focus-overlay hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 10001;">
         <div class="glass-panel" style="background: var(--bg-main); padding: 2rem; max-width: 500px; width: 90%; border-radius: var(--radius); text-align: left;">
             <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem;" data-i18n="edit_title">Editar Tarea</h3>
@@ -282,7 +287,6 @@
         </div>
     </div>
 
-    <!-- NUEVO: MODAL PARA CREAR PROYECTO -->
     <div id="projectModal" class="focus-overlay hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 10001;">
         <div class="glass-panel" style="background: var(--bg-main); padding: 2rem; max-width: 400px; width: 90%; border-radius: var(--radius); text-align: left;">
             <h3 style="margin-bottom: 0.5rem; font-size: 1.2rem;" data-i18n="mod_proj_title">Crear Nuevo Proyecto</h3>
@@ -295,7 +299,6 @@
         </div>
     </div>
 
-    <!-- NUEVO: MODAL GENÉRICO DE CONFIRMACIÓN (PELIGRO) -->
     <div id="confirmModal" class="focus-overlay hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 10002;">
         <div class="glass-panel" style="background: var(--bg-main); padding: 2rem; max-width: 400px; width: 90%; border-radius: var(--radius); text-align: left; border: 1px solid var(--danger-red);">
             <h3 style="margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--danger-red);" id="confirmTitle">¿Estás seguro?</h3>
