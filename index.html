@@ -11,6 +11,7 @@
     <link rel="apple-touch-icon" href="./icon.png">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,28 +26,37 @@
 
     <div id="mainDashboard" class="dashboard-layout hidden">
         
-                <aside class="sidebar">
-            <!-- LOGO Y CAMPANITA DE NOTIFICACIONES -->
+        <aside class="sidebar" style="position: relative;">
+            <!-- LOGO Y CAMPANITA -->
             <div class="logo" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h2 style="margin: 0;">Smart-Time</h2>
-                <button class="nav-btn" style="position: relative; padding: 5px 8px;" onclick="App.toggleNotifPanel()">
+                <button class="nav-btn" style="position: relative; padding: 5px 8px; font-size: 1.2rem;" onclick="App.toggleNotifPanel()">
                     🔔
                     <span id="notifBadge" class="hidden" style="position: absolute; top: -2px; right: -2px; background: var(--danger-red); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold;">0</span>
                 </button>
             </div>
 
-            <!-- PANEL FLOTANTE DE NOTIFICACIONES -->
+            <!-- PANEL DE NOTIFICACIONES OCULTO -->
             <div id="notifPanel" class="glass-panel hidden" style="position: absolute; top: 60px; left: 1.5rem; width: calc(100% - 3rem); z-index: 100; max-height: 350px; overflow-y: auto; padding: 1rem; box-shadow: var(--shadow-md);">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
                     <h3 style="font-size: 0.9rem;" data-i18n="notif_title">Centro de Avisos</h3>
-                    <button style="background: none; border: none; color: var(--text-muted); cursor: pointer;" onclick="App.clearNotifs()">Limpiar</button>
+                    <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem;" onclick="App.clearNotifs()">Limpiar</button>
                 </div>
-                <div id="notifList" style="display: flex; flex-direction: column; gap: 8px;">
-                    <!-- Las notificaciones se inyectan aquí -->
-                </div>
+                <div id="notifList" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
 
+            <!-- MENÚ PRINCIPAL RECUPERADO -->
             <nav class="nav-menu">
+                <button class="nav-btn active" onclick="App.switchTab('bandeja', this)" data-i18n="nav_inbox">Bandeja</button>
+                <button class="nav-btn" onclick="App.switchTab('pizarra', this)" data-i18n="nav_board">Pizarra</button>
+                <button class="nav-btn" onclick="App.switchTab('historial', this)" data-i18n="nav_analytics">Analítica</button>
+                <button class="nav-btn" onclick="App.switchTab('ajustes', this)" data-i18n="nav_settings">Ajustes</button>
+                
+                <div class="sidebar-divider"></div>
+                <h3 class="sidebar-title" data-i18n="nav_projects">PROYECTOS</h3>
+                <div id="folderList" class="folder-list"></div>
+                <button class="nav-btn add-folder-btn" onclick="App.addFolder()" data-i18n="btn_new_proj">+ Nuevo Proyecto</button>
+            </nav>
             
             <div class="sidebar-footer">
                 <button class="nav-btn" onclick="App.toggleLanguage()" style="border: 1px solid var(--border-color);" id="langBtn">🇬🇧 English</button>
@@ -57,6 +67,7 @@
 
         <main class="main-content">
             
+            <!-- BANDEJA -->
             <section id="tab-bandeja" class="tab-content active">
                 <header class="tab-header"><h2 data-i18n="inbox_title">Bandeja de Entrada</h2><p data-i18n="inbox_sub">Captura tareas para procesarlas después.</p></header>
                 
@@ -79,7 +90,6 @@
                         </select>
                         <input type="number" id="timeInput" placeholder="Min" min="1" required style="flex: 1; max-width: 80px;">
                     </div>
-
                     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); width: 100%;">
                         <label style="font-size: 0.85rem; font-weight: 500;" data-i18n="freq_label">Frecuencia de la tarea:</label>
                         <select id="freqInput" style="margin-top: 5px;" onchange="App.toggleDaysSelector('new')">
@@ -109,12 +119,11 @@
                     </div>
                 </div>
 
-                <div id="emptyState" class="empty-state hidden glass-panel">
-                    <h3 data-i18n="empty_title">Bandeja Vacía</h3><p data-i18n="empty_sub">Añade una tarea para comenzar.</p>
-                </div>
+                <div id="emptyState" class="empty-state hidden glass-panel"><h3 data-i18n="empty_title">Bandeja Vacía</h3><p data-i18n="empty_sub">Añade una tarea para comenzar.</p></div>
                 <div id="tasksGrid" class="tasks-grid"></div>
             </section>
 
+            <!-- PIZARRA KANBAN -->
             <section id="tab-pizarra" class="tab-content hidden">
                 <header class="tab-header"><h2 data-i18n="board_title">Pizarra</h2><p data-i18n="board_sub">Organiza y ejecuta tus tareas.</p></header>
                 
@@ -128,16 +137,11 @@
                     </div>
                 </div>
 
-                <!-- 🔥 GRID PARA HÁBITOS Y ÁRBOL (COMPARTEN ESPACIO) -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                    
-                    <!-- PANEL DE HÁBITOS -->
                     <div id="habitsPanel" class="glass-panel" style="padding: 1.5rem;">
                         <h3 style="font-size: 1rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);" data-i18n="habits_title">Rutinas de Hoy</h3>
                         <div id="habitsList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
                     </div>
-
-                    <!-- 🔥 NUEVO: EL ÁRBOL DEL FOCO -->
                     <div id="treeWidget" class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);">
                             <h3 style="font-size: 1rem;" data-i18n="tree_title">Árbol del Foco</h3>
@@ -150,28 +154,20 @@
                                     <span id="treeStageName" style="font-weight: 600; font-size: 0.9rem;">Semilla</span>
                                     <span id="treeProgressText" style="font-size: 0.8rem; color: var(--text-muted);">0 / 60 XP</span>
                                 </div>
-                                <div class="progress-bar" style="height: 8px;">
-                                    <div id="treeProgressFill" class="progress-fill" style="background: var(--cta-green);"></div>
-                                </div>
-                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;" data-i18n="tree_desc">Completa tareas para que crezca. Si dejas tareas atrasadas en 'Hacer Hoy', perderá vida.</p>
+                                <div class="progress-bar" style="height: 8px;"><div id="treeProgressFill" class="progress-fill" style="background: var(--cta-green);"></div></div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="kanban-board">
-                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'later')">
-                        <h3 class="column-title" data-i18n="col_later">Algún día</h3><div class="kanban-cards" id="column-later"></div>
-                    </div>
-                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'week')">
-                        <h3 class="column-title" data-i18n="col_week">Esta Semana</h3><div class="kanban-cards" id="column-week"></div>
-                    </div>
-                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'today')">
-                        <h3 class="column-title" style="color: var(--text-main);" data-i18n="col_today">Hacer Hoy</h3><div class="kanban-cards" id="column-today"></div>
-                    </div>
+                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'later')"><h3 class="column-title" data-i18n="col_later">Algún día</h3><div class="kanban-cards" id="column-later"></div></div>
+                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'week')"><h3 class="column-title" data-i18n="col_week">Esta Semana</h3><div class="kanban-cards" id="column-week"></div></div>
+                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'today')"><h3 class="column-title" style="color: var(--text-main);" data-i18n="col_today">Hacer Hoy</h3><div class="kanban-cards" id="column-today"></div></div>
                 </div>
             </section>
 
+            <!-- ANALÍTICA -->
             <section id="tab-historial" class="tab-content hidden">
                 <header class="tab-header"><h2 data-i18n="stat_title">Analítica</h2><p data-i18n="stat_sub">Métricas de rendimiento e historial.</p></header>
                 <div class="metrics-grid">
@@ -180,33 +176,26 @@
                     <div class="metric-card glass-panel"><h4 data-i18n="stat_done">Completadas</h4><div id="totalCompleted" class="metric-value">0</div></div>
                 </div>
                 <div class="stats-grid">
-                    <div class="glass-panel" style="padding: 1.5rem; grid-column: 1 / -1;">
-                        <h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_heatmap">Mapa de Constancia (Últimas 12 semanas)</h3>
-                        <div id="heatmapContainer" class="heatmap-grid"></div>
-                    </div>
+                    <div class="glass-panel" style="padding: 1.5rem; grid-column: 1 / -1;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_heatmap">Mapa de Constancia</h3><div id="heatmapContainer" class="heatmap-grid"></div></div>
                     <div class="glass-panel" style="padding: 1.5rem;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_dist">Distribución</h3><div style="height: 250px;"><canvas id="statsChart"></canvas></div></div>
                     <div class="glass-panel" style="padding: 1.5rem;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_log">Registro de Actividad</h3><div id="historyList" class="history-list"></div></div>
                 </div>
             </section>
 
+            <!-- AJUSTES -->
             <section id="tab-ajustes" class="tab-content hidden">
                 <header class="tab-header"><h2 data-i18n="set_title">Ajustes</h2><p data-i18n="set_sub">Configura tu entorno de trabajo.</p></header>
                 <div class="settings-grid">
                     <div class="settings-card glass-panel profile-card">
-                        <div class="profile-header">
-                            <img id="userPhoto" src="" alt="Profile" class="profile-img">
-                            <div class="profile-info"><h3 id="userName">Cargando...</h3><p id="userEmail">usuario@correo.com</p></div>
-                        </div>
+                        <div class="profile-header"><img id="userPhoto" src="" alt="Profile" class="profile-img"><div class="profile-info"><h3 id="userName">Cargando...</h3><p id="userEmail">usuario@correo.com</p></div></div>
                     </div>
                     <div class="settings-card glass-panel">
-                        <h3 data-i18n="set_ai">Integración IA (Groq)</h3>
-                        <p data-i18n="set_ai_sub">Introduce tu API Key para activar el asistente.</p>
+                        <h3 data-i18n="set_ai">Integración IA (Groq)</h3><p data-i18n="set_ai_sub">Introduce tu API Key para activar el asistente.</p>
                         <input type="password" id="apiKeyInput" placeholder="API Key">
                         <button class="cta-button" onclick="App.saveApiKey()" style="margin-top: 10px;" data-i18n="btn_save_key">Guardar Configuración</button>
                     </div>
                     <div class="settings-card glass-panel danger-zone">
-                        <h3 style="color: var(--danger-red);" data-i18n="set_data">Gestión de Datos</h3>
-                        <p data-i18n="set_data_sub">Exporta tus datos o formatea el sistema.</p>
+                        <h3 style="color: var(--danger-red);" data-i18n="set_data">Gestión de Datos</h3><p data-i18n="set_data_sub">Exporta tus datos o formatea el sistema.</p>
                         <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
                             <button class="cta-button" onclick="App.exportData()">Exportar JSON</button>
                             <button class="cta-button danger" onclick="App.clearAllData()" data-i18n="btn_format">Formatear BD</button>
@@ -215,6 +204,7 @@
                 </div>
             </section>
 
+            <!-- CARPETAS -->
             <section id="tab-carpetas" class="tab-content hidden">
                 <header class="tab-header"><h2 id="currentFolderName">General</h2><p data-i18n="proj_sub">Tareas asignadas a este proyecto.</p></header>
                 <div id="folderTasksGrid" class="tasks-grid"></div>
@@ -243,9 +233,7 @@
                 <div style="display: flex; gap: 10px;">
                     <div style="flex: 1;"><label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_time">Tiempo (min)</label><input type="number" id="editTimeInput" min="1" required style="margin-top: 5px;"></div>
                     <div style="flex: 1;"><label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_energy">Energía</label>
-                        <select id="editEnergyInput" style="margin-top: 5px;">
-                            <option value="alta" data-i18n="en_high">Alta</option><option value="media" data-i18n="en_med">Normal</option><option value="baja" data-i18n="en_low">Baja</option>
-                        </select>
+                        <select id="editEnergyInput" style="margin-top: 5px;"><option value="alta" data-i18n="en_high">Alta</option><option value="media" data-i18n="en_med">Normal</option><option value="baja" data-i18n="en_low">Baja</option></select>
                     </div>
                 </div>
                 <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">
