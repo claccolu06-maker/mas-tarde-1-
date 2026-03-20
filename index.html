@@ -167,49 +167,73 @@
             </section>
 
             <!-- ANALÍTICA -->
+                       <!-- PESTAÑA 3: ANALÍTICA (Diseño alineado a 3 columnas) -->
             <section id="tab-historial" class="tab-content hidden">
                 <header class="tab-header"><h2 data-i18n="stat_title">Analítica</h2><p data-i18n="stat_sub">Métricas de rendimiento e historial.</p></header>
-                <div class="metrics-grid">
+                <div class="metrics-grid" style="margin-bottom: 2rem;">
                     <div class="metric-card glass-panel"><h4 data-i18n="stat_rank">Rango Actual</h4><div id="userLevel" class="metric-value">Analista</div></div>
                     <div class="metric-card glass-panel"><h4 data-i18n="stat_time">Tiempo Invertido</h4><div id="totalMinutes" class="metric-value">0m</div></div>
                     <div class="metric-card glass-panel"><h4 data-i18n="stat_done">Completadas</h4><div id="totalCompleted" class="metric-value">0</div></div>
                 </div>
-                <div class="stats-grid">
-                    <div class="glass-panel" style="padding: 1.5rem; grid-column: 1 / -1;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_heatmap">Mapa de Constancia (Últimas 12 semanas)</h3><div id="heatmapContainer" class="heatmap-grid"></div></div>
-                    <div class="glass-panel" style="padding: 1.5rem;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_dist">Distribución</h3><div style="height: 250px;"><canvas id="statsChart"></canvas></div></div>
-                    <div class="glass-panel" style="padding: 1.5rem;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_log">Registro de Actividad</h3><div id="historyList" class="history-list"></div></div>
+                
+                <!-- 🔥 NUEVO: GRID ALINEADO A 3 COLUMNAS -->
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; align-items: start;">
+                    <div class="glass-panel" style="padding: 1.5rem;">
+                        <h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_heatmap">Mapa de Constancia</h3>
+                        <div id="heatmapContainer" class="heatmap-grid" style="min-height: 150px;"></div>
+                    </div>
+                    <div class="glass-panel" style="padding: 1.5rem;">
+                        <h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_dist">Distribución</h3>
+                        <div style="height: 200px;"><canvas id="statsChart"></canvas></div>
+                    </div>
+                    <div class="glass-panel" style="padding: 1.5rem; max-height: 290px; overflow: hidden; display: flex; flex-direction: column;">
+                        <h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_log">Registro de Actividad</h3>
+                        <div id="historyList" class="history-list" style="flex-grow: 1; overflow-y: auto;"></div>
+                    </div>
                 </div>
             </section>
 
-            <!-- AJUSTES -->
+            <!-- PESTAÑA 4: AJUSTES (Instrucciones de la IA) -->
             <section id="tab-ajustes" class="tab-content hidden">
                 <header class="tab-header"><h2 data-i18n="set_title">Ajustes</h2><p data-i18n="set_sub">Configura tu entorno de trabajo.</p></header>
                 <div class="settings-grid">
                     <div class="settings-card glass-panel profile-card">
-                        <div class="profile-header"><img id="userPhoto" src="" alt="Profile" class="profile-img"><div class="profile-info"><h3 id="userName">Cargando...</h3><p id="userEmail">usuario@correo.com</p></div></div>
+                        <div class="profile-header">
+                            <img id="userPhoto" src="" alt="Profile" class="profile-img">
+                            <div class="profile-info"><h3 id="userName">Cargando...</h3><p id="userEmail">usuario@correo.com</p></div>
+                        </div>
                     </div>
-                    <div class="settings-card glass-panel">
-                        <h3 data-i18n="set_ai">Integración IA (Groq)</h3><p data-i18n="set_ai_sub">Introduce tu API Key para activar el asistente.</p>
-                        <input type="password" id="apiKeyInput" placeholder="API Key">
-                        <button class="cta-button" onclick="App.saveApiKey()" style="margin-top: 10px;" data-i18n="btn_save_key">Guardar Configuración</button>
+                    
+                    <div class="settings-card glass-panel" style="border-left: 4px solid #a855f7;">
+                        <h3 data-i18n="set_ai">Integración IA (Groq)</h3>
+                        <p data-i18n="set_ai_sub">Introduce tu API Key para activar el asistente ejecutivo.</p>
+                        
+                        <!-- 🔥 NUEVO: INSTRUCCIONES CLARAS PARA EL USUARIO -->
+                        <div style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem;">
+                            <strong>¿Cómo conseguir tu llave 100% gratis en 1 minuto?</strong>
+                            <ol style="margin-left: 1.2rem; margin-top: 0.5rem; color: var(--text-muted);">
+                                <li>Haz clic en el enlace azul de abajo.</li>
+                                <li>Inicia sesión en Groq con Google o Github.</li>
+                                <li>Pulsa el botón <b>"Create API Key"</b>, ponle un nombre y cópiala.</li>
+                                <li>Pégala aquí abajo y guarda.</li>
+                            </ol>
+                            <a href="https://console.groq.com/keys" target="_blank" style="color: #a855f7; display: block; margin-top: 0.8rem; font-weight: bold;">➡️ Obtener Llave API Gratis</a>
+                        </div>
+
+                        <input type="password" id="apiKeyInput" placeholder="gsk_.............................">
+                        <button class="cta-button" onclick="App.saveApiKey()" style="margin-top: 10px; background: #a855f7; color: white;" data-i18n="btn_save_key">Guardar Llave</button>
                     </div>
+
                     <div class="settings-card glass-panel danger-zone">
-                        <h3 style="color: var(--danger-red);" data-i18n="set_data">Gestión de Datos</h3><p data-i18n="set_data_sub">Exporta tus datos o formatea el sistema.</p>
+                        <h3 style="color: var(--danger-red);" data-i18n="set_data">Gestión de Datos</h3>
+                        <p data-i18n="set_data_sub">Exporta tus datos o formatea el sistema.</p>
                         <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-                            <button class="cta-button" onclick="App.exportData()">Exportar JSON</button>
+                            <button class="cta-button" onclick="App.exportData()" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color);">Exportar JSON</button>
                             <button class="cta-button danger" onclick="App.openConfirmModal('format')" data-i18n="btn_format">Formatear BD</button>
                         </div>
                     </div>
                 </div>
             </section>
-
-            <!-- CARPETAS -->
-            <section id="tab-carpetas" class="tab-content hidden">
-                <header class="tab-header"><h2 id="currentFolderName">General</h2><p data-i18n="proj_sub">Tareas asignadas a este proyecto.</p></header>
-                <div id="folderTasksGrid" class="tasks-grid"></div>
-            </section>
-        </main>
-    </div>
 
     <!-- ================= MODOS Y MODALES DE CRISTAL ================= -->
     
