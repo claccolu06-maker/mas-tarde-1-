@@ -23,7 +23,9 @@ const dict = {
         js_exec: "Ejecutar", js_edit: "Editar", js_comp: "Completar", js_del: "Borrar", js_undo: "Deshacer", js_tasks: "tareas",
         js_rank1: "Analista", js_rank2: "Asociado", js_rank3: "Mánager", js_rank4: "Ejecutivo", js_streak: "Racha",
         js_opt1: "Bandeja", js_opt2: "Algún día", js_opt3: "Esta Semana", js_opt4: "Hacer Hoy",
-        tree_seed: "Semilla", tree_sprout: "Brote", tree_tree: "Árbol", tree_oak: "Roble", tree_dead: "Marchito"
+        tree_seed: "Semilla", tree_sprout: "Brote", tree_tree: "Árbol", tree_oak: "Roble", tree_dead: "Marchito",
+        mod_proj_title: "Crear Nuevo Proyecto", mod_proj_sub: "Agrupa tus tareas en carpetas de trabajo.", btn_create: "Crear Proyecto",
+        conf_del_task: "¿Borrar Tarea?", conf_del_task_sub: "Se eliminará permanentemente del sistema.", conf_del_proj: "¿Borrar Proyecto?", conf_del_proj_sub: "Las tareas de este proyecto se moverán a 'General'.", conf_format: "⚠️ ¿Formatear Sistema?", conf_format_sub: "Se borrarán TODAS las tareas, proyectos y el árbol morirá."
     },
     en: {
         nav_inbox: "Inbox", nav_board: "Board", nav_analytics: "Analytics", nav_settings: "Settings", nav_projects: "PROJECTS", btn_new_proj: "+ New Project",
@@ -41,7 +43,9 @@ const dict = {
         js_exec: "Execute", js_edit: "Edit", js_comp: "Complete", js_del: "Delete", js_undo: "Undo", js_tasks: "tasks",
         js_rank1: "Analyst", js_rank2: "Associate", js_rank3: "Manager", js_rank4: "Executive", js_streak: "Streak",
         js_opt1: "Inbox", js_opt2: "Backlog", js_opt3: "This Week", js_opt4: "Today",
-        tree_seed: "Seed", tree_sprout: "Sprout", tree_tree: "Tree", tree_oak: "Oak", tree_dead: "Withered"
+        tree_seed: "Seed", tree_sprout: "Sprout", tree_tree: "Tree", tree_oak: "Oak", tree_dead: "Withered",
+        mod_proj_title: "Create New Project", mod_proj_sub: "Group your tasks into working folders.", btn_create: "Create Project",
+        conf_del_task: "Delete Task?", conf_del_task_sub: "It will be permanently removed.", conf_del_proj: "Delete Project?", conf_del_proj_sub: "Tasks within this project will be moved to 'General'.", conf_format: "⚠️ Format Database?", conf_format_sub: "ALL tasks and projects will be wiped. The tree will die."
     }
 };
 
@@ -50,6 +54,7 @@ const App = (() => {
     let tree = { health: 100, lastCheck: '' }; let notifs = []; let unreadNotifs = 0; 
     let focusInterval; let myChart = null; let draggedTaskId = null; let currentEnergyFilter = 'all';
     let lang = localStorage.getItem('smartLang') || 'es';
+    let confirmActionCallback = null; // Para guardar la función de borrar
 
     const t = (key) => dict[lang][key] || key;
     const applyTranslations = () => { document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); }); document.getElementById('langBtn').textContent = lang === 'es' ? '🇬🇧 English' : '🇪🇸 Español'; UI.updateStats(); UI.render(); UI.renderNotifs(); };
@@ -108,19 +113,50 @@ const App = (() => {
     };
 
     const switchTab = (tab, btn) => { document.querySelectorAll('.tab-content').forEach(t => { t.classList.remove('active', 'hidden'); t.style.display = 'none'; }); const targetTab = document.getElementById(`tab-${tab}`); if(targetTab) { targetTab.classList.add('active'); targetTab.style.display = 'block'; } document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); if(tab === 'historial') setTimeout(UI.renderChart, 100); };
-    const addFolder = () => { const name = prompt(lang === 'es' ? "Nombre del proyecto:" : "Project name:"); if(name && name.trim() !== "") { if(!folders.includes(name.trim())) { folders.push(name.trim()); Storage.saveFolders(); addNotif(lang==='es'?`Proyecto "${name}" creado.`:`Project "${name}" created.`, 'success'); } else alert("Ya existe."); } };
-    const deleteFolder = (folderName) => { if(folderName === 'General') return; if(confirm(`Delete project "${folderName}"?`)) { let needsTaskSave = false; tasks.forEach(t => { if(t.folder === folderName) { t.folder = 'General'; needsTaskSave = true; } }); if(needsTaskSave) Storage.saveTasks(); folders = folders.filter(f => f !== folderName); Storage.saveFolders(); if(currentActiveFolder === folderName) { currentActiveFolder = 'General'; document.getElementById('currentFolderName').textContent = `General`; switchTab('bandeja', document.querySelector('.nav-btn')); } addNotif(lang==='es'?`Proyecto "${folderName}" eliminado.`:`Project "${folderName}" deleted.`, 'warning'); UI.renderFolders(); UI.render(); } };
+    
+    // --- NUEVO: SISTEMA DE MODALES PROFESIONALES (Adios Prompt y Confirm) ---
+    const openProjectModal = () => { document.getElementById('newProjectInput').value = ''; document.getElementById('projectModal').classList.remove('hidden'); document.getElementById('newProjectInput').focus(); };
+    const closeProjectModal = () => { document.getElementById('projectModal').classList.add('hidden'); };
+    const confirmAddFolder = () => { const name = document.getElementById('newProjectInput').value.trim(); if(name !== "") { if(!folders.includes(name)) { folders.push(name); Storage.saveFolders(); addNotif(lang==='es'?`Proyecto "${name}" creado.`:`Project "${name}" created.`, 'success'); closeProjectModal(); } else { alert(lang==='es'?"Esa carpeta ya existe.":"Folder already exists."); } } };
+
+    const openConfirmModal = (actionType, idOrName) => {
+        const modal = document.getElementById('confirmModal');
+        const titleEl = document.getElementById('confirmTitle');
+        const textEl = document.getElementById('confirmText');
+        
+        if (actionType === 'delete_task') {
+            titleEl.textContent = t('conf_del_task'); textEl.textContent = t('conf_del_task_sub');
+            confirmActionCallback = () => { tasks = tasks.filter(t => t.id !== idOrName); Storage.saveTasks(); closeConfirmModal(); };
+        } else if (actionType === 'delete_folder') {
+            titleEl.textContent = t('conf_del_proj'); textEl.textContent = t('conf_del_proj_sub');
+            confirmActionCallback = () => { 
+                let needsTaskSave = false; tasks.forEach(t => { if(t.folder === idOrName) { t.folder = 'General'; needsTaskSave = true; } });
+                if(needsTaskSave) Storage.saveTasks(); folders = folders.filter(f => f !== idOrName); Storage.saveFolders();
+                if(currentActiveFolder === idOrName) { currentActiveFolder = 'General'; document.getElementById('currentFolderName').textContent = `General`; switchTab('bandeja', document.querySelector('.nav-btn')); }
+                addNotif(lang==='es'?`Proyecto "${idOrName}" eliminado.`:`Project "${idOrName}" deleted.`, 'warning'); UI.renderFolders(); UI.render(); closeConfirmModal(); 
+            };
+        } else if (actionType === 'format') {
+            titleEl.textContent = t('conf_format'); textEl.textContent = t('conf_format_sub');
+            confirmActionCallback = () => { tasks = []; folders = ['General']; tree = { health: 100, lastCheck: '' }; notifs = []; unreadNotifs = 0; Storage.saveTasks(); Storage.saveFolders(); Storage.saveTree(); Storage.saveNotifs(); showToast("Formatted."); UI.renderNotifs(); closeConfirmModal(); };
+        }
+        
+        // Quitar eventos viejos del botón "Sí" y poner el nuevo
+        const btn = document.getElementById('confirmBtn');
+        btn.onclick = confirmActionCallback;
+        modal.classList.remove('hidden');
+    };
+    const closeConfirmModal = () => { document.getElementById('confirmModal').classList.add('hidden'); confirmActionCallback = null; };
+
     const openFolder = (name, btn) => { currentActiveFolder = name; document.getElementById('currentFolderName').textContent = name; switchTab('carpetas', btn); UI.render(); };
     const setEnergyFilter = (level, btn) => { currentEnergyFilter = level; document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); UI.render(); };
     const checkSharedLinks = () => { const urlParams = new URLSearchParams(window.location.search); const t = urlParams.get('title') || urlParams.get('text'); const u = urlParams.get('url'); if (t || u) { if (document.getElementById('titleInput')) document.getElementById('titleInput').value = t || ''; if (document.getElementById('urlInput')) document.getElementById('urlInput').value = u || ''; window.history.replaceState({}, document.title, window.location.pathname); showToast("Link captured."); } };
     const dragStart = (e, id) => { draggedTaskId = id; e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', id); }; const allowDrop = (e) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.add('drag-over'); }; const dragLeave = (e) => { const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); }; const drop = (e, status) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); if(draggedTaskId) { moveTask(draggedTaskId, status); draggedTaskId = null; } };
     
-        const addTask = (e) => {
+    // --- AÑADIDO RÁPIDO ("QUICK ADD") ---
+    const addTask = (e) => {
         e.preventDefault(); 
-        
-        // 1. Recoger Valores (Con Inteligencia de "Quick Add")
         const titleVal = document.getElementById('titleInput').value.trim();
-        if (!titleVal) return; // Si por algún error llega vacío, cancelamos.
+        if (!titleVal) return; 
 
         const energyVal = document.getElementById('energyInput') ? document.getElementById('energyInput').value : 'media'; 
         const freqVal = document.getElementById('freqInput') ? document.getElementById('freqInput').value : 'once'; 
@@ -128,50 +164,26 @@ const App = (() => {
         const urlVal = document.getElementById('urlInput') ? document.getElementById('urlInput').value : '';
         const catVal = document.getElementById('categoryInput') ? document.getElementById('categoryInput').value : 'proyecto';
         
-        // Magia del Quick Add: Si no pone tiempo, ponemos 15 por defecto.
         const timeInputRaw = document.getElementById('timeInput').value;
-        const timeVal = (timeInputRaw && !isNaN(timeInputRaw)) ? parseInt(timeInputRaw) : 15;
-
-        // 2. Comprobar Días Semanales (Si aplica)
+        const timeVal = (timeInputRaw && !isNaN(timeInputRaw)) ? parseInt(timeInputRaw) : 15; // 15 mins por defecto
+        
         let selectedDays = [];
         if (freqVal === 'weekly') {
             document.querySelectorAll('.day-cb:checked').forEach(cb => selectedDays.push(cb.value));
-            if (selectedDays.length === 0) { 
-                alert(lang === 'es' ? "Selecciona al menos un día." : "Select at least one day."); 
-                return; 
-            }
+            if (selectedDays.length === 0) { alert(lang==='es'?"Selecciona al menos un día.":"Select at least one day."); return; }
         }
         
-        // 3. Crear el Objeto de la Tarea
         tasks.unshift({ 
-            id: Date.now().toString(), 
-            url: urlVal, 
-            title: titleVal, 
-            category: catVal, 
-            energy: energyVal, 
-            folder: folderVal, 
-            time: timeVal, 
-            freq: freqVal, 
-            days: selectedDays, 
-            streak: 0, 
-            lastCompletedDate: null, 
-            completedDates: [], 
-            completed: false, 
-            status: 'bandeja' 
+            id: Date.now().toString(), url: urlVal, title: titleVal, 
+            category: catVal, energy: energyVal, folder: folderVal, time: timeVal, 
+            freq: freqVal, days: selectedDays, streak: 0, lastCompletedDate: null, completedDates: [], completed: false, status: 'bandeja' 
         });
-
-        // 4. Guardar, Limpiar y Avisar
-        Storage.saveTasks(); 
-        document.getElementById('taskForm').reset(); 
-        
-        // Mantener la carpeta actual seleccionada para no tener que volver a elegirla
-        if(document.getElementById('folderInput')) {
-            document.getElementById('folderInput').value = folderVal; 
-        }
+        Storage.saveTasks(); document.getElementById('taskForm').reset(); 
+        if(document.getElementById('folderInput')) document.getElementById('folderInput').value = folderVal; 
         toggleDaysSelector('new'); 
-        
-        showToast(lang === 'es' ? "Tarea Capturada ⚡" : "Task Captured ⚡");
+        showToast(lang === 'es' ? "Tarea Guardada ⚡" : "Task Saved ⚡");
     };
+
     const editTask = (id) => { 
         const task = tasks.find(t => t.id === id); if (!task) return; 
         document.getElementById('editTaskId').value = task.id; document.getElementById('editTitleInput').value = task.title; document.getElementById('editTimeInput').value = task.time; document.getElementById('editEnergyInput').value = task.energy || 'media';
@@ -216,7 +228,6 @@ const App = (() => {
         } 
     };
 
-    const deleteTask = (id) => { if(confirm(lang==='es'?'¿Borrar tarea?':'Delete task?')) { tasks = tasks.filter(t => t.id !== id); Storage.saveTasks(); } };
     const moveTask = (id, newStatus) => { const tk = tasks.find(x => x.id === id); if(tk) { tk.status = newStatus; Storage.saveTasks(); } };
     
     const playDing = () => { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime); gain.gain.setValueAtTime(1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1.5); } catch(e) {} };
@@ -256,7 +267,7 @@ const App = (() => {
                 notifs.forEach(n => { list.innerHTML += `<div class="notif-item ${n.type}"><div>${n.msg}</div><span class="notif-time">${n.time}</span></div>`; });
             }
         },
-        renderFolders: () => { const list = document.getElementById('folderList'); const select = document.getElementById('folderInput'); if(list) { list.innerHTML = ''; folders.forEach(f => { const folderItem = document.createElement('div'); folderItem.className = 'folder-item'; const btn = document.createElement('button'); btn.className = 'nav-btn'; btn.innerHTML = f; btn.onclick = function() { App.openFolder(f, this); }; folderItem.appendChild(btn); if(f !== 'General') { const delBtn = document.createElement('button'); delBtn.className = 'delete-folder-btn'; delBtn.innerHTML = '✕'; delBtn.onclick = (e) => { e.stopPropagation(); App.deleteFolder(f); }; folderItem.appendChild(delBtn); } list.appendChild(folderItem); }); } if(select) { select.innerHTML = ''; folders.forEach(f => { select.innerHTML += `<option value="${f}">${f}</option>`; }); } },
+        renderFolders: () => { const list = document.getElementById('folderList'); const select = document.getElementById('folderInput'); if(list) { list.innerHTML = ''; folders.forEach(f => { const folderItem = document.createElement('div'); folderItem.className = 'folder-item'; const btn = document.createElement('button'); btn.className = 'nav-btn'; btn.innerHTML = f; btn.onclick = function() { App.openFolder(f, this); }; folderItem.appendChild(btn); if(f !== 'General') { const delBtn = document.createElement('button'); delBtn.className = 'delete-folder-btn'; delBtn.innerHTML = '✕'; delBtn.onclick = (e) => { e.stopPropagation(); App.openConfirmModal('delete_folder', f); }; folderItem.appendChild(delBtn); } list.appendChild(folderItem); }); } if(select) { select.innerHTML = ''; folders.forEach(f => { select.innerHTML += `<option value="${f}">${f}</option>`; }); } },
         updateStats: () => {
             const completed = tasks.filter(t => t.completed); const c = completed.length;
             if(document.getElementById('progressFill')) document.getElementById('progressFill').style.width = tasks.length === 0 ? '0%' : `${(c / tasks.length) * 100}%`;
@@ -328,7 +339,7 @@ const App = (() => {
                         <button class="btn-play" onclick="App.startFocus('${task.id}')">${t('js_exec')}</button>
                         <button class="btn-edit" onclick="App.editTask('${task.id}')">${t('js_edit')}</button>
                         <button class="btn-complete" onclick="App.toggleComplete('${task.id}')">${t('js_comp')}</button>
-                        <button class="btn-delete" onclick="App.deleteTask('${task.id}')">${t('js_del')}</button>
+                        <button class="btn-delete" onclick="App.openConfirmModal('delete_task', '${task.id}')">${t('js_del')}</button>
                     </div>`;
                 return card;
             };
@@ -352,7 +363,7 @@ const App = (() => {
                             </div>
                             <div class="habit-actions">
                                 <button onclick="App.editTask('${task.id}')">${t('js_edit')}</button>
-                                <button onclick="App.deleteTask('${task.id}')">${t('js_del')}</button>
+                                <button onclick="App.openConfirmModal('delete_task', '${task.id}')">${t('js_del')}</button>
                             </div>
                         `;
                         if(g.habits) g.habits.appendChild(habitEl);
@@ -387,8 +398,7 @@ const App = (() => {
     const saveApiKey = () => { const key = document.getElementById('apiKeyInput').value.trim(); if(key) { localStorage.setItem('aiApiKey', key); showToast("Key Saved"); } else { localStorage.removeItem('aiApiKey'); showToast("Key Removed"); } };
     const askGemini = async () => { const apiKey = localStorage.getItem('aiApiKey'); if (!apiKey) { alert("API Key required."); switchTab('ajustes', document.querySelectorAll('.nav-btn')[3]); return; } const aiCard = document.getElementById('aiResponseCard'); const aiText = document.getElementById('aiResponseText'); const pendingTasks = tasks.filter(t => !t.completed); if(pendingTasks.length === 0) { showToast("No tasks available."); return; } aiCard.classList.remove('hidden'); aiText.innerHTML = '<i>Processing workload data...</i>'; const tasksString = pendingTasks.map(t => `- [${t.status.toUpperCase()}] ${t.title} (${t.time}m, Energy: ${t.energy})`).join('\n'); const promptSystem = `You are an Executive Assistant. Your goal is to maximize efficiency. Recommend EXACTLY ONE task from the list. Be concise, professional, no emojis. Provide rationale. Respond in ${lang === 'es' ? 'Spanish' : 'English'}.`; const promptUser = `Energy capacity: ${currentEnergyFilter}. Pending tasks:\n${tasksString}`; try { const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: [{ role: "system", content: promptSystem }, { role: "user", content: promptUser }] }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error?.message || "Server Error."); } const data = await response.json(); const aiResponse = data.choices[0].message.content; aiText.innerHTML = ''; let i = 0; const typeWriter = setInterval(() => { if(i < aiResponse.length) { aiText.innerHTML += aiResponse.charAt(i); i++; } else { clearInterval(typeWriter); } }, 15); } catch (error) { console.error(error); aiText.innerHTML = `<span style="color:var(--danger-red)">System Error: ${error.message}</span>`; } };
     const toggleTheme = () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); } else { html.setAttribute('data-theme', 'dark'); } UI.renderChart(); };
-    const clearAllData = () => { if(confirm("Format database?")) { tasks = []; folders = ['General']; tree = { health: 100, lastCheck: '' }; notifs = []; unreadNotifs = 0; Storage.saveTasks(); Storage.saveFolders(); Storage.saveTree(); Storage.saveNotifs(); showToast("Formatted."); UI.renderNotifs(); } };
-    const exportData = () => { if(tasks.length===0) return; const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks)); a.download = "backup.json"; document.body.appendChild(a); a.click(); a.remove(); };
+    
     let isLoggingIn = false; const login = async () => { if(isLoggingIn) return; isLoggingIn = true; try { await signInWithPopup(auth, provider); } catch (error) { if(error.code !== 'auth/cancelled-popup-request') alert("Auth Error: " + error.message); } finally { isLoggingIn = false; } };
     const logout = () => signOut(auth).then(() => { tasks = []; tree = { health: 100, lastCheck: '' }; notifs = []; document.getElementById('mainDashboard').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); });
 
@@ -404,7 +414,7 @@ const App = (() => {
         });
     };
 
-    return { init, toggleComplete, deleteTask, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, clearAllData, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder, deleteFolder, saveApiKey, toggleLanguage, toggleDaysSelector, closeEditModal, saveEditedTask, toggleNotifPanel, clearNotifs };
+    return { init, toggleComplete, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder, saveApiKey, toggleLanguage, toggleDaysSelector, closeEditModal, saveEditedTask, toggleNotifPanel, clearNotifs, openProjectModal, closeProjectModal, confirmAddFolder, openConfirmModal, closeConfirmModal };
 })();
 
 window.App = App; document.addEventListener('DOMContentLoaded', App.init); if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(e=>e); }); }
