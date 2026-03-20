@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    
+
     <div id="loginScreen" class="login-screen">
         <div class="login-card glass-panel">
             <div class="logo"><h1>Smart-Time Workspace</h1></div>
@@ -36,7 +36,7 @@
                 </button>
             </div>
 
-            <!-- PANEL DE NOTIFICACIONES OCULTO -->
+            <!-- PANEL DE NOTIFICACIONES -->
             <div id="notifPanel" class="glass-panel hidden" style="position: absolute; top: 60px; left: 1.5rem; width: calc(100% - 3rem); z-index: 100; max-height: 350px; overflow-y: auto; padding: 1rem; box-shadow: var(--shadow-md);">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
                     <h3 style="font-size: 0.9rem;" data-i18n="notif_title">Centro de Avisos</h3>
@@ -45,7 +45,6 @@
                 <div id="notifList" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
 
-            <!-- MENÚ PRINCIPAL RECUPERADO -->
             <nav class="nav-menu">
                 <button class="nav-btn active" onclick="App.switchTab('bandeja', this)" data-i18n="nav_inbox">Bandeja</button>
                 <button class="nav-btn" onclick="App.switchTab('pizarra', this)" data-i18n="nav_board">Pizarra</button>
@@ -55,7 +54,7 @@
                 <div class="sidebar-divider"></div>
                 <h3 class="sidebar-title" data-i18n="nav_projects">PROYECTOS</h3>
                 <div id="folderList" class="folder-list"></div>
-                <button class="nav-btn add-folder-btn" onclick="App.addFolder()" data-i18n="btn_new_proj">+ Nuevo Proyecto</button>
+                <button class="nav-btn add-folder-btn" onclick="App.openProjectModal()" data-i18n="btn_new_proj">+ Nuevo Proyecto</button>
             </nav>
             
             <div class="sidebar-footer">
@@ -88,7 +87,7 @@
                         <select id="energyInput" style="flex: 1; min-width: 100px;">
                             <option value="alta" data-i18n="en_high">Energía Alta</option><option value="media" selected data-i18n="en_med">Normal</option><option value="baja" data-i18n="en_low">Energía Baja</option>
                         </select>
-                      <input type="number" id="timeInput" placeholder="Min" min="1" style="flex: 1; max-width: 80px;" title="Si lo dejas vacío, se asignarán 15 minutos por defecto.">
+                        <input type="number" id="timeInput" placeholder="Min" min="1" style="flex: 1; max-width: 80px;" title="Si lo dejas vacío, se asignarán 15 minutos por defecto.">
                     </div>
                     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); width: 100%;">
                         <label style="font-size: 0.85rem; font-weight: 500;" data-i18n="freq_label">Frecuencia de la tarea:</label>
@@ -176,7 +175,7 @@
                     <div class="metric-card glass-panel"><h4 data-i18n="stat_done">Completadas</h4><div id="totalCompleted" class="metric-value">0</div></div>
                 </div>
                 <div class="stats-grid">
-                    <div class="glass-panel" style="padding: 1.5rem; grid-column: 1 / -1;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_heatmap">Mapa de Constancia</h3><div id="heatmapContainer" class="heatmap-grid"></div></div>
+                    <div class="glass-panel" style="padding: 1.5rem; grid-column: 1 / -1;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_heatmap">Mapa de Constancia (Últimas 12 semanas)</h3><div id="heatmapContainer" class="heatmap-grid"></div></div>
                     <div class="glass-panel" style="padding: 1.5rem;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_dist">Distribución</h3><div style="height: 250px;"><canvas id="statsChart"></canvas></div></div>
                     <div class="glass-panel" style="padding: 1.5rem;"><h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_log">Registro de Actividad</h3><div id="historyList" class="history-list"></div></div>
                 </div>
@@ -198,7 +197,7 @@
                         <h3 style="color: var(--danger-red);" data-i18n="set_data">Gestión de Datos</h3><p data-i18n="set_data_sub">Exporta tus datos o formatea el sistema.</p>
                         <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
                             <button class="cta-button" onclick="App.exportData()">Exportar JSON</button>
-                            <button class="cta-button danger" onclick="App.clearAllData()" data-i18n="btn_format">Formatear BD</button>
+                            <button class="cta-button danger" onclick="App.openConfirmModal('format')" data-i18n="btn_format">Formatear BD</button>
                         </div>
                     </div>
                 </div>
@@ -212,7 +211,9 @@
         </main>
     </div>
 
-    <!-- MODOS Y MODALES -->
+    <!-- ================= MODOS Y MODALES DE CRISTAL ================= -->
+    
+    <!-- MODO FOCUS -->
     <div id="focusOverlay" class="focus-overlay hidden">
         <div class="focus-content">
             <span class="focus-badge" data-i18n="focus_badge">SESIÓN DE ENFOQUE</span>
@@ -224,7 +225,8 @@
         </div>
     </div>
 
-    <div id="editModal" class="focus-overlay hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);">
+    <!-- MODAL DE EDICIÓN DE TAREAS -->
+    <div id="editModal" class="focus-overlay hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 10001;">
         <div class="glass-panel" style="background: var(--bg-main); padding: 2rem; max-width: 500px; width: 90%; border-radius: var(--radius); text-align: left;">
             <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem;" data-i18n="edit_title">Editar Tarea</h3>
             <input type="hidden" id="editTaskId">
@@ -252,6 +254,31 @@
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 2rem;">
                 <button class="nav-btn" onclick="App.closeEditModal()" data-i18n="btn_cancel" style="background: var(--input-bg); border: 1px solid var(--border-color);">Cancelar</button>
                 <button class="cta-button" onclick="App.saveEditedTask()" data-i18n="btn_save_changes">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVO: MODAL PARA CREAR PROYECTO -->
+    <div id="projectModal" class="focus-overlay hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 10001;">
+        <div class="glass-panel" style="background: var(--bg-main); padding: 2rem; max-width: 400px; width: 90%; border-radius: var(--radius); text-align: left;">
+            <h3 style="margin-bottom: 0.5rem; font-size: 1.2rem;" data-i18n="mod_proj_title">Crear Nuevo Proyecto</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;" data-i18n="mod_proj_sub">Agrupa tus tareas en carpetas de trabajo.</p>
+            <input type="text" id="newProjectInput" placeholder="Ej: Universidad, Marketing..." style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="nav-btn" onclick="App.closeProjectModal()" data-i18n="btn_cancel" style="background: var(--input-bg); border: 1px solid var(--border-color);">Cancelar</button>
+                <button class="cta-button" onclick="App.confirmAddFolder()" data-i18n="btn_create">Crear Proyecto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVO: MODAL GENÉRICO DE CONFIRMACIÓN (PELIGRO) -->
+    <div id="confirmModal" class="focus-overlay hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 10002;">
+        <div class="glass-panel" style="background: var(--bg-main); padding: 2rem; max-width: 400px; width: 90%; border-radius: var(--radius); text-align: left; border: 1px solid var(--danger-red);">
+            <h3 style="margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--danger-red);" id="confirmTitle">¿Estás seguro?</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;" id="confirmText">Esta acción no se puede deshacer.</p>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="nav-btn" onclick="App.closeConfirmModal()" data-i18n="btn_cancel" style="background: var(--input-bg); border: 1px solid var(--border-color);">Cancelar</button>
+                <button class="cta-button danger" id="confirmBtn" style="background: var(--danger-red); color: white;">Sí, Eliminar</button>
             </div>
         </div>
     </div>
