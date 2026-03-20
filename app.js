@@ -6,7 +6,6 @@ const firebaseConfig = { apiKey: "AIzaSyCz45FGoqkYt9BS4J1_UjkBu6gSTHp0QOU", auth
 const appFirebase = initializeApp(firebaseConfig); const auth = getAuth(appFirebase); const db = getDatabase(appFirebase); const provider = new GoogleAuthProvider();
 let currentUser = null;
 
-// --- DICCIONARIO BILINGÜE ---
 const dict = {
     es: {
         nav_inbox: "Bandeja", nav_board: "Pizarra", nav_analytics: "Analítica", nav_settings: "Ajustes", nav_projects: "PROYECTOS", btn_new_proj: "+ Nuevo Proyecto",
@@ -20,8 +19,7 @@ const dict = {
         btn_save_key: "Guardar Configuración", set_data: "Gestión de Datos", set_data_sub: "Exporta tus datos o formatea el sistema.", btn_format: "Formatear BD",
         proj_sub: "Tareas asignadas a este proyecto.", focus_badge: "SESIÓN DE ENFOQUE", btn_material: "Abrir Material", btn_end_focus: "Finalizar Sesión",
         edit_title: "Editar Tarea", edit_name: "Nombre de la tarea", edit_time: "Tiempo (min)", edit_energy: "Energía", btn_cancel: "Cancelar", btn_save_changes: "Guardar Cambios",
-        habits_title: "Rutinas de Hoy", habits_empty: "No hay rutinas programadas para hoy.",
-        notif_title: "Centro de Avisos",
+        habits_title: "Rutinas de Hoy", habits_empty: "No hay rutinas programadas para hoy.", notif_title: "Centro de Avisos", tree_title: "Árbol del Foco",
         js_exec: "Ejecutar", js_edit: "Editar", js_comp: "Completar", js_del: "Borrar", js_undo: "Deshacer", js_tasks: "tareas",
         js_rank1: "Analista", js_rank2: "Asociado", js_rank3: "Mánager", js_rank4: "Ejecutivo", js_streak: "Racha",
         js_opt1: "Bandeja", js_opt2: "Algún día", js_opt3: "Esta Semana", js_opt4: "Hacer Hoy",
@@ -39,8 +37,7 @@ const dict = {
         btn_save_key: "Save Configuration", set_data: "Data Management", set_data_sub: "Export or format your database.", btn_format: "Format Database",
         proj_sub: "Tasks assigned to this project.", focus_badge: "FOCUS SESSION", btn_material: "Open Material", btn_end_focus: "End Session",
         edit_title: "Edit Task", edit_name: "Task Name", edit_time: "Time (min)", edit_energy: "Energy", btn_cancel: "Cancel", btn_save_changes: "Save Changes",
-        habits_title: "Today's Routines", habits_empty: "No routines scheduled for today.",
-        notif_title: "Notification Center",
+        habits_title: "Today's Routines", habits_empty: "No routines scheduled for today.", notif_title: "Notification Center", tree_title: "Focus Tree",
         js_exec: "Execute", js_edit: "Edit", js_comp: "Complete", js_del: "Delete", js_undo: "Undo", js_tasks: "tasks",
         js_rank1: "Analyst", js_rank2: "Associate", js_rank3: "Manager", js_rank4: "Executive", js_streak: "Streak",
         js_opt1: "Inbox", js_opt2: "Backlog", js_opt3: "This Week", js_opt4: "Today",
@@ -50,9 +47,7 @@ const dict = {
 
 const App = (() => {
     let tasks = []; let folders = ['General']; let currentActiveFolder = 'General';
-    let tree = { health: 100, lastCheck: '' }; 
-    let notifs = []; // 🔥 NUEVO: Historial de notificaciones
-    let unreadNotifs = 0; // 🔥 Contador de notificaciones sin leer
+    let tree = { health: 100, lastCheck: '' }; let notifs = []; let unreadNotifs = 0; 
     let focusInterval; let myChart = null; let draggedTaskId = null; let currentEnergyFilter = 'all';
     let lang = localStorage.getItem('smartLang') || 'es';
 
@@ -61,24 +56,10 @@ const App = (() => {
     const toggleLanguage = () => { lang = lang === 'es' ? 'en' : 'es'; localStorage.setItem('smartLang', lang); applyTranslations(); };
     const showToast = (msg) => { const c = document.getElementById('toast-container'); if(!c) return; const toast = document.createElement('div'); toast.className = 'toast'; toast.textContent = msg; c.appendChild(toast); setTimeout(() => toast.remove(), 3000); };
     
-    // --- GESTOR DE NOTIFICACIONES ---
-    const addNotif = (msg, type = 'info') => {
-        const d = new Date(); const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        notifs.unshift({ msg, time: timeStr, type, id: Date.now() });
-        if(notifs.length > 20) notifs.pop(); // Guardar solo las últimas 20
-        unreadNotifs++;
-        Storage.saveNotifs(); UI.renderNotifs();
-    };
-
-    const toggleNotifPanel = () => {
-        const p = document.getElementById('notifPanel');
-        p.classList.toggle('hidden');
-        if(!p.classList.contains('hidden')) { unreadNotifs = 0; Storage.saveNotifs(); UI.renderNotifs(); }
-    };
-
+    const addNotif = (msg, type = 'info') => { const d = new Date(); const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; notifs.unshift({ msg, time: timeStr, type, id: Date.now() }); if(notifs.length > 20) notifs.pop(); unreadNotifs++; Storage.saveNotifs(); UI.renderNotifs(); };
+    const toggleNotifPanel = () => { const p = document.getElementById('notifPanel'); p.classList.toggle('hidden'); if(!p.classList.contains('hidden')) { unreadNotifs = 0; Storage.saveNotifs(); UI.renderNotifs(); } };
     const clearNotifs = () => { notifs = []; unreadNotifs = 0; Storage.saveNotifs(); UI.renderNotifs(); };
 
-    // --- LÓGICA CORE ---
     const getLocalDate = (offsetDays = 0) => { const d = new Date(); d.setDate(d.getDate() + offsetDays); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
     
     const checkDailyRoutinesAndTree = () => {
@@ -104,7 +85,6 @@ const App = (() => {
                 if (shouldRevive) { task.completed = false; task.status = 'today'; needsTaskSave = true; if (task.lastCompletedDate !== yesterdayStr && task.lastCompletedDate) task.streak = 0; }
             }
         });
-
         if (needsTaskSave) Storage.saveTasks(); if (needsTreeSave) Storage.saveTree();
     };
 
@@ -188,10 +168,7 @@ const App = (() => {
             if(tk.completed) { 
                 tk.completedAt = today; 
                 if (!tk.completedDates.includes(today)) tk.completedDates.push(today);
-                
-                tree.health = Math.min(100, tree.health + 10);
-                Storage.saveTree();
-
+                tree.health = Math.min(100, tree.health + 10); Storage.saveTree();
                 if(tk.freq && tk.freq !== 'once') { if(tk.lastCompletedDate !== today) { tk.streak = (tk.streak || 0) + 1; tk.lastCompletedDate = today; } } 
                 if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#38bdf8', '#10b981'] });
             } 
@@ -207,76 +184,41 @@ const App = (() => {
     const deleteTask = (id) => { if(confirm(lang==='es'?'¿Borrar tarea?':'Delete task?')) { tasks = tasks.filter(t => t.id !== id); Storage.saveTasks(); } };
     const moveTask = (id, newStatus) => { const tk = tasks.find(x => x.id === id); if(tk) { tk.status = newStatus; Storage.saveTasks(); } };
     
-    // --- RELOJ FOCUS MEJORADO (CON CONFETI Y SIN ALERT) ---
     const playDing = () => { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime); gain.gain.setValueAtTime(1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1.5); } catch(e) {} };
     
     const startFocus = (id) => { 
         const task = tasks.find(t => t.id === id); if(!task) return; 
         if ("Notification" in window && Notification.permission === "default") { Notification.requestPermission(); } 
-        
-        const overlay = document.getElementById('focusOverlay');
-        overlay.classList.remove('hidden', 'finished'); // Limpiar estado anterior
+        const overlay = document.getElementById('focusOverlay'); overlay.classList.remove('hidden', 'finished');
         document.getElementById('focusTitle').textContent = task.title; 
-        
         const urlBtn = document.getElementById('focusUrlBtn'); 
         if (urlBtn) { if (task.url && task.url.trim() !== "") { let finalUrl = task.url.trim(); if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl; urlBtn.href = finalUrl; urlBtn.style.display = 'inline-block'; } else { urlBtn.style.display = 'none'; } } 
         
         const endTime = Date.now() + ((task.time || 25) * 60 * 1000); 
-        
         const updateTimer = () => { 
             const remaining = Math.round((endTime - Date.now()) / 1000); 
             if (remaining <= 0) { 
-                clearInterval(focusInterval); 
-                document.getElementById('focusTimer').textContent = "00:00"; 
-                
-                playDing(); 
-                overlay.classList.add('finished'); // Fondo verde
-                document.getElementById('focusTitle').textContent = lang==='es' ? "¡Tiempo Terminado!" : "Time's Up!";
-                
-                // Notificación del Sistema (OS)
-                if ("Notification" in window && Notification.permission === "granted") { 
-                    new Notification("Focus Complete", { body: `Task finished: "${task.title}".`, icon: "./icon.png" }); 
-                } 
-                
-                // Notificación In-App (Campanita)
-                addNotif(lang==='es' ? `Completaste tu sesión de enfoque para: "${task.title}".` : `Focus session completed for: "${task.title}".`, 'success');
-                
-                // Confeti de Victoria
+                clearInterval(focusInterval); document.getElementById('focusTimer').textContent = "00:00"; 
+                playDing(); overlay.classList.add('finished'); document.getElementById('focusTitle').textContent = lang==='es' ? "¡Misión Cumplida!" : "Time's Up!";
+                if ("Notification" in window && Notification.permission === "granted") { new Notification("Focus Complete", { body: `Task finished: "${task.title}".`, icon: "./icon.png" }); } 
+                addNotif(lang==='es' ? `Sesión de enfoque completada: "${task.title}".` : `Focus session completed: "${task.title}".`, 'success');
                 if (typeof confetti === "function") confetti({ particleCount: 200, spread: 100, origin: { y: 0.3 }, colors: ['#ffffff', '#16a34a'] });
-
-                // Ya no hay alert. El usuario pulsará "Finalizar Sesión" para salir.
                 return; 
             } 
             document.getElementById('focusTimer').textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`; 
         }; 
         updateTimer(); focusInterval = setInterval(updateTimer, 1000); 
     };
-    
-    const stopFocus = () => { 
-        clearInterval(focusInterval); 
-        const overlay = document.getElementById('focusOverlay');
-        overlay.classList.add('hidden'); 
-        overlay.classList.remove('finished');
-    };
+    const stopFocus = () => { clearInterval(focusInterval); const overlay = document.getElementById('focusOverlay'); overlay.classList.add('hidden'); overlay.classList.remove('finished'); };
 
     const UI = {
         renderNotifs: () => {
             const list = document.getElementById('notifList'); const badge = document.getElementById('notifBadge');
-            if(badge) {
-                if(unreadNotifs > 0) { badge.textContent = unreadNotifs; badge.classList.remove('hidden'); }
-                else { badge.classList.add('hidden'); }
-            }
+            if(badge) { if(unreadNotifs > 0) { badge.textContent = unreadNotifs; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); } }
             if(list) {
                 list.innerHTML = '';
                 if(notifs.length === 0) { list.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted); text-align:center;">${lang==='es'?'No hay notificaciones.':'No notifications.'}</p>`; return; }
-                notifs.forEach(n => {
-                    list.innerHTML += `
-                        <div class="notif-item ${n.type}">
-                            <div>${n.msg}</div>
-                            <span class="notif-time">${n.time}</span>
-                        </div>
-                    `;
-                });
+                notifs.forEach(n => { list.innerHTML += `<div class="notif-item ${n.type}"><div>${n.msg}</div><span class="notif-time">${n.time}</span></div>`; });
             }
         },
         renderFolders: () => { const list = document.getElementById('folderList'); const select = document.getElementById('folderInput'); if(list) { list.innerHTML = ''; folders.forEach(f => { const folderItem = document.createElement('div'); folderItem.className = 'folder-item'; const btn = document.createElement('button'); btn.className = 'nav-btn'; btn.innerHTML = f; btn.onclick = function() { App.openFolder(f, this); }; folderItem.appendChild(btn); if(f !== 'General') { const delBtn = document.createElement('button'); delBtn.className = 'delete-folder-btn'; delBtn.innerHTML = '✕'; delBtn.onclick = (e) => { e.stopPropagation(); App.deleteFolder(f); }; folderItem.appendChild(delBtn); } list.appendChild(folderItem); }); } if(select) { select.innerHTML = ''; folders.forEach(f => { select.innerHTML += `<option value="${f}">${f}</option>`; }); } },
