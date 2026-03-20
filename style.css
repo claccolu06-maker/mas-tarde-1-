@@ -194,3 +194,37 @@ input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 
 .health-good { color: var(--cta-green) !important; }
 .health-warn { color: #f59e0b !important; }
 .health-dead { color: var(--danger-red) !important; }
+/* =========================================================
+   SISTEMA DE NOTIFICACIONES IN-APP
+========================================================= */
+.notif-item {
+    padding: 10px 12px;
+    background: var(--input-bg);
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-blue);
+    font-size: 0.85rem;
+    animation: slideIn 0.3s ease-out;
+}
+.notif-item.success { border-left-color: var(--cta-green); }
+.notif-item.warning { border-left-color: #f59e0b; }
+.notif-item.danger { border-left-color: var(--danger-red); }
+
+.notif-time {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* Rediseño del Modo Focus cuando termina */
+.focus-overlay.finished {
+    background: rgba(22, 163, 74, 0.95); /* Fondo verde éxito */
+}
+.focus-overlay.finished .timer-display {
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(255,255,255,0.5);
+}
+.focus-overlay.finished .focus-badge {
+    background: #ffffff;
+    color: var(--cta-green);
+}
