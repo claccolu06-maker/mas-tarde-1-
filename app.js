@@ -115,28 +115,63 @@ const App = (() => {
     const checkSharedLinks = () => { const urlParams = new URLSearchParams(window.location.search); const t = urlParams.get('title') || urlParams.get('text'); const u = urlParams.get('url'); if (t || u) { if (document.getElementById('titleInput')) document.getElementById('titleInput').value = t || ''; if (document.getElementById('urlInput')) document.getElementById('urlInput').value = u || ''; window.history.replaceState({}, document.title, window.location.pathname); showToast("Link captured."); } };
     const dragStart = (e, id) => { draggedTaskId = id; e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', id); }; const allowDrop = (e) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.add('drag-over'); }; const dragLeave = (e) => { const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); }; const drop = (e, status) => { e.preventDefault(); const col = e.target.closest('.kanban-column'); if(col) col.classList.remove('drag-over'); if(draggedTaskId) { moveTask(draggedTaskId, status); draggedTaskId = null; } };
     
-    const addTask = (e) => {
+        const addTask = (e) => {
         e.preventDefault(); 
+        
+        // 1. Recoger Valores (Con Inteligencia de "Quick Add")
+        const titleVal = document.getElementById('titleInput').value.trim();
+        if (!titleVal) return; // Si por algún error llega vacío, cancelamos.
+
         const energyVal = document.getElementById('energyInput') ? document.getElementById('energyInput').value : 'media'; 
         const freqVal = document.getElementById('freqInput') ? document.getElementById('freqInput').value : 'once'; 
         const folderVal = document.getElementById('folderInput') ? document.getElementById('folderInput').value : 'General';
+        const urlVal = document.getElementById('urlInput') ? document.getElementById('urlInput').value : '';
+        const catVal = document.getElementById('categoryInput') ? document.getElementById('categoryInput').value : 'proyecto';
         
+        // Magia del Quick Add: Si no pone tiempo, ponemos 15 por defecto.
+        const timeInputRaw = document.getElementById('timeInput').value;
+        const timeVal = (timeInputRaw && !isNaN(timeInputRaw)) ? parseInt(timeInputRaw) : 15;
+
+        // 2. Comprobar Días Semanales (Si aplica)
         let selectedDays = [];
         if (freqVal === 'weekly') {
             document.querySelectorAll('.day-cb:checked').forEach(cb => selectedDays.push(cb.value));
-            if (selectedDays.length === 0) { alert(lang==='es'?"Selecciona al menos un día.":"Select at least one day."); return; }
+            if (selectedDays.length === 0) { 
+                alert(lang === 'es' ? "Selecciona al menos un día." : "Select at least one day."); 
+                return; 
+            }
         }
         
-        const title = document.getElementById('titleInput').value;
+        // 3. Crear el Objeto de la Tarea
         tasks.unshift({ 
-            id: Date.now().toString(), url: document.getElementById('urlInput').value, title: title, 
-            category: document.getElementById('categoryInput').value, energy: energyVal, folder: folderVal, time: parseInt(document.getElementById('timeInput').value), 
-            freq: freqVal, days: selectedDays, streak: 0, lastCompletedDate: null, completedDates: [], completed: false, status: 'bandeja' 
+            id: Date.now().toString(), 
+            url: urlVal, 
+            title: titleVal, 
+            category: catVal, 
+            energy: energyVal, 
+            folder: folderVal, 
+            time: timeVal, 
+            freq: freqVal, 
+            days: selectedDays, 
+            streak: 0, 
+            lastCompletedDate: null, 
+            completedDates: [], 
+            completed: false, 
+            status: 'bandeja' 
         });
-        Storage.saveTasks(); document.getElementById('taskForm').reset(); document.getElementById('folderInput').value = folderVal; toggleDaysSelector('new'); 
-        showToast(lang === 'es' ? "Guardado" : "Saved");
-    };
 
+        // 4. Guardar, Limpiar y Avisar
+        Storage.saveTasks(); 
+        document.getElementById('taskForm').reset(); 
+        
+        // Mantener la carpeta actual seleccionada para no tener que volver a elegirla
+        if(document.getElementById('folderInput')) {
+            document.getElementById('folderInput').value = folderVal; 
+        }
+        toggleDaysSelector('new'); 
+        
+        showToast(lang === 'es' ? "Tarea Capturada ⚡" : "Task Captured ⚡");
+    };
     const editTask = (id) => { 
         const task = tasks.find(t => t.id === id); if (!task) return; 
         document.getElementById('editTaskId').value = task.id; document.getElementById('editTitleInput').value = task.title; document.getElementById('editTimeInput').value = task.time; document.getElementById('editEnergyInput').value = task.energy || 'media';
