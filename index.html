@@ -25,19 +25,28 @@
 
     <div id="mainDashboard" class="dashboard-layout hidden">
         
-        <aside class="sidebar">
-            <div class="logo"><h2>Smart-Time</h2></div>
+                <aside class="sidebar">
+            <!-- LOGO Y CAMPANITA DE NOTIFICACIONES -->
+            <div class="logo" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="margin: 0;">Smart-Time</h2>
+                <button class="nav-btn" style="position: relative; padding: 5px 8px;" onclick="App.toggleNotifPanel()">
+                    🔔
+                    <span id="notifBadge" class="hidden" style="position: absolute; top: -2px; right: -2px; background: var(--danger-red); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold;">0</span>
+                </button>
+            </div>
+
+            <!-- PANEL FLOTANTE DE NOTIFICACIONES -->
+            <div id="notifPanel" class="glass-panel hidden" style="position: absolute; top: 60px; left: 1.5rem; width: calc(100% - 3rem); z-index: 100; max-height: 350px; overflow-y: auto; padding: 1rem; box-shadow: var(--shadow-md);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                    <h3 style="font-size: 0.9rem;" data-i18n="notif_title">Centro de Avisos</h3>
+                    <button style="background: none; border: none; color: var(--text-muted); cursor: pointer;" onclick="App.clearNotifs()">Limpiar</button>
+                </div>
+                <div id="notifList" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Las notificaciones se inyectan aquí -->
+                </div>
+            </div>
+
             <nav class="nav-menu">
-                <button class="nav-btn active" onclick="App.switchTab('bandeja', this)" data-i18n="nav_inbox">Bandeja</button>
-                <button class="nav-btn" onclick="App.switchTab('pizarra', this)" data-i18n="nav_board">Pizarra</button>
-                <button class="nav-btn" onclick="App.switchTab('historial', this)" data-i18n="nav_analytics">Analítica</button>
-                <button class="nav-btn" onclick="App.switchTab('ajustes', this)" data-i18n="nav_settings">Ajustes</button>
-                
-                <div class="sidebar-divider"></div>
-                <h3 class="sidebar-title" data-i18n="nav_projects">PROYECTOS</h3>
-                <div id="folderList" class="folder-list"></div>
-                <button class="nav-btn add-folder-btn" onclick="App.addFolder()" data-i18n="btn_new_proj">+ Nuevo Proyecto</button>
-            </nav>
             
             <div class="sidebar-footer">
                 <button class="nav-btn" onclick="App.toggleLanguage()" style="border: 1px solid var(--border-color);" id="langBtn">🇬🇧 English</button>
