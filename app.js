@@ -92,7 +92,27 @@ const App = (() => {
         });
         if (needsTaskSave) Storage.saveTasks(); if (needsTreeSave) Storage.saveTree();
     };
+const checkTaskDecay = () => {
+    const today = new Date(getLocalDate(0));
+    let decayed = 0;
 
+    tasks.forEach(t => {
+        if (t.status === 'later' && t.createdAt) {
+            const createdDate = new Date(t.createdAt);
+            const diffDays = Math.floor((today - createdDate) / (1000 * 60 * 60 * 24));
+            if (diffDays >= 14) decayed++;
+        }
+    });
+
+    if (decayed > 0) {
+        addNotif(
+            lang === 'es'
+                ? `Llevas ${decayed} tareas en "Algún día" desde hace más de 2 semanas. ¿Las hacemos o las borramos?`
+                : `You have ${decayed} tasks in "Backlog" older than 2 weeks. Do them or delete them.`,
+            'warning'
+        );
+    }
+};
     const toggleDaysSelector = (mode) => { const sel = document.getElementById(mode === 'new' ? 'freqInput' : 'editFreqInput'); const daysDiv = document.getElementById(mode === 'new' ? 'daysSelector_new' : 'daysSelector_edit'); if (sel.value === 'weekly') { daysDiv.classList.remove('hidden'); } else { daysDiv.classList.add('hidden'); } };
 
     const generateOnboarding = () => {
@@ -114,10 +134,16 @@ const App = (() => {
         listen: () => {
             if(currentUser) {
                 onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => { 
-                    const data = snapshot.val(); 
-                    if (!data) { generateOnboarding(); } else { tasks = Array.isArray(data) ? data.filter(x=>x) : Object.values(data).filter(x=>x); }
-                    checkDailyRoutinesAndTree(); UI.render(); 
-                }, { onlyOnce: true }); 
+    const data = snapshot.val(); 
+    if (!data) { 
+        generateOnboarding(); 
+    } else { 
+        tasks = Array.isArray(data) ? data.filter(x=>x) : Object.values(data).filter(x=>x); 
+    }
+    checkDailyRoutinesAndTree(); 
+    checkTaskDecay();           // NUEVO
+    UI.render(); 
+}, { onlyOnce: true });
                 onValue(ref(db, 'users/' + currentUser.uid + '/tasks'), (snapshot) => { const data = snapshot.val(); if (data) tasks = Array.isArray(data) ? data.filter(x=>x) : Object.values(data).filter(x=>x); UI.render(); });
                 onValue(ref(db, 'users/' + currentUser.uid + '/folders'), (snapshot) => { const data = snapshot.val(); if (data) folders = Array.isArray(data) ? data : Object.values(data); UI.renderFolders(); });
                 onValue(ref(db, 'users/' + currentUser.uid + '/tree'), (snapshot) => { const data = snapshot.val(); if (data) { tree = data; checkDailyRoutinesAndTree(); UI.updateStats(); } else { Storage.saveTree(); } });
@@ -173,11 +199,23 @@ const App = (() => {
             document.querySelectorAll('.day-cb:checked').forEach(cb => selectedDays.push(cb.value));
             if (selectedDays.length === 0) { alert(lang==='es'?"Selecciona al menos un día.":"Select at least one day."); return; }
         }
-        
-        tasks.unshift({ 
-            id: Date.now().toString(), url: urlVal, title: titleVal, category: catVal, energy: energyVal, folder: folderVal, time: timeVal, 
-            freq: freqVal, days: selectedDays, streak: 0, lastCompletedDate: null, completedDates: [], completed: false, status: 'bandeja' 
-        });
+       tasks.unshift({
+    id: Date.now().toString(),
+    url: urlVal,
+    title: titleVal,
+    category: catVal,
+    energy: energyVal,
+    folder: folderVal,
+    time: timeVal,
+    freq: freqVal,
+    days: selectedDays,
+    streak: 0,
+    lastCompletedDate: null,
+    completedDates: [],
+    completed: false,
+    status: 'bandeja',
+    createdAt: getLocalDate(0) // NUEVO
+});
         Storage.saveTasks(); document.getElementById('taskForm').reset(); 
         if(document.getElementById('folderInput')) document.getElementById('folderInput').value = folderVal; 
         toggleDaysSelector('new'); UI.render(); showToast(lang === 'es' ? "Tarea Guardada ⚡" : "Task Saved ⚡");
@@ -391,7 +429,15 @@ const App = (() => {
                 else if (task.status === 'today') { if(g.today) g.today.appendChild(card); }
                 if (task.folder === currentActiveFolder || (!task.folder && currentActiveFolder === 'General')) { const folderCard = createCardDOM(task); if(g.folder) g.folder.appendChild(folderCard); }
             });
-            
+            const created = task.createdAt;
+if (created && task.status === 'later') {
+    const createdDate = new Date(created);
+    const today = new Date(getLocalDate(0));
+    const diffDays = Math.floor((today - createdDate) / (1000 * 60 * 60 * 24));
+    if (diffDays >= 14) {
+        card.classList.add('task-old'); // CSS se define en style.css
+    }
+}
             if (!hasHabitsToday && g.habits) { g.habits.innerHTML = `<p style="font-size:0.85rem; color:var(--text-muted);">${t('habits_empty')}</p>`; }
             if(document.getElementById('emptyState')) document.getElementById('emptyState').classList.toggle('hidden', enBandeja > 0);
             UI.updateStats();
@@ -401,6 +447,80 @@ const App = (() => {
 
     const saveApiKey = () => { const key = document.getElementById('apiKeyInput').value.trim(); if(key) { localStorage.setItem('aiApiKey', key); showToast("Key Saved"); } else { localStorage.removeItem('aiApiKey'); showToast("Key Removed"); } };
     const askGemini = async () => { const apiKey = localStorage.getItem('aiApiKey'); if (!apiKey) { alert("API Key required."); switchTab('ajustes', document.querySelectorAll('.nav-btn')[3]); return; } const aiCard = document.getElementById('aiResponseCard'); const aiText = document.getElementById('aiResponseText'); const pendingTasks = tasks.filter(t => !t.completed); if(pendingTasks.length === 0) { showToast("No tasks available."); return; } aiCard.classList.remove('hidden'); aiText.innerHTML = '<i>Processing workload data...</i>'; const tasksString = pendingTasks.map(t => `- [${t.status.toUpperCase()}] ${t.title} (${t.time}m, Energy: ${t.energy})`).join('\n'); const promptSystem = `You are an Executive Assistant. Your goal is to maximize efficiency. Recommend EXACTLY ONE task from the list. Be concise, professional, no emojis. Provide rationale. Respond in ${lang === 'es' ? 'Spanish' : 'English'}.`; const promptUser = `Energy capacity: ${currentEnergyFilter}. Pending tasks:\n${tasksString}`; try { const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: [{ role: "system", content: promptSystem }, { role: "user", content: promptUser }] }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error?.message || "Server Error."); } const data = await response.json(); const aiResponse = data.choices[0].message.content; aiText.innerHTML = ''; let i = 0; const typeWriter = setInterval(() => { if(i < aiResponse.length) { aiText.innerHTML += aiResponse.charAt(i); i++; } else { clearInterval(typeWriter); } }, 15); } catch (error) { console.error(error); aiText.innerHTML = `<span style="color:var(--danger-red)">System Error: ${error.message}</span>`; } };
+    const runTimeTetris = () => {
+    const minsInput = document.getElementById('tetrisMinutes');
+    if (!minsInput) return;
+
+    const target = parseInt(minsInput.value);
+    if (isNaN(target) || target <= 0) {
+        showToast(lang === 'es' ? 'Pon minutos válidos.' : 'Enter valid minutes.');
+        return;
+    }
+
+    const energySel = document.getElementById('tetrisEnergy');
+    const energy = energySel ? energySel.value : 'all';
+
+    // 1) Candidatas: no completadas, status 'today' o 'week', no hábitos recurrentes
+    let pool = tasks.filter(t =>
+        !t.completed &&
+        (t.status === 'today' || t.status === 'week') &&
+        (!t.freq || t.freq === 'once')
+    );
+
+    if (energy !== 'all') {
+        pool = pool.filter(t => (t.energy || 'media') === energy);
+    }
+
+    // Orden simple: primero por energía, luego por tiempo
+    const energyScore = e => e === 'alta' ? 0 : (e === 'media' ? 1 : 2);
+    pool.sort((a, b) => {
+        const ea = energyScore(a.energy || 'media');
+        const eb = energyScore(b.energy || 'media');
+        if (ea !== eb) return ea - eb;
+        return (a.time || 15) - (b.time || 15);
+    });
+
+    // 2) Greedy: metemos mientras quepa
+    const chosen = [];
+    let used = 0;
+    for (const t of pool) {
+        const dur = t.time || 15;
+        if (used + dur <= target) {
+            chosen.push(t);
+            used += dur;
+        }
+    }
+
+    const box = document.getElementById('tetrisResult');
+    if (!box) return;
+
+    if (chosen.length === 0) {
+        box.innerHTML = lang === 'es'
+            ? 'No hay tareas que encajen con ese bloque de tiempo y energía.'
+            : 'No tasks fit that time and energy.';
+        return;
+    }
+
+    const remaining = target - used;
+    const header = lang === 'es'
+        ? `Plan para ${target} min → ${used} usados, ${remaining} libres.`
+        : `Plan for ${target} min → ${used} used, ${remaining} remaining.`;
+
+    let html = `<p style="margin-bottom:0.5rem;"><strong>${header}</strong></p><ul style="padding-left:1.2rem; margin:0;">`;
+    chosen.forEach(t => {
+        html += `<li>${t.title} <span style="color:var(--text-muted);">(${t.time || 15}m, ${t.folder || 'General'})</span></li>`;
+    });
+    html += '</ul>';
+
+    box.innerHTML = html;
+
+    addNotif(
+        lang === 'es'
+            ? `Tetris del Tiempo listo (${chosen.length} tareas, ${used} min).`
+            : `Time Tetris ready (${chosen.length} tasks, ${used} min).`,
+        'info'
+    );
+};
     const toggleTheme = () => { const html = document.documentElement; if (html.getAttribute('data-theme') === 'dark') { html.removeAttribute('data-theme'); } else { html.setAttribute('data-theme', 'dark'); } UI.renderChart(); };
     const clearAllData = () => { if(confirm("Format database?")) { tasks = []; folders = ['General']; tree = { health: 100, lastCheck: '' }; notifs = []; unreadNotifs = 0; Storage.saveTasks(); Storage.saveFolders(); Storage.saveTree(); Storage.saveNotifs(); showToast("Formatted."); UI.renderNotifs(); UI.render(); } };
     const exportData = () => { if(tasks.length===0) return; const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks)); a.download = "backup.json"; document.body.appendChild(a); a.click(); a.remove(); };
@@ -419,7 +539,36 @@ const App = (() => {
         });
     };
 
-    return { init, toggleComplete, editTask, startFocus, moveTask, switchTab, setEnergyFilter, toggleTheme, exportData, login, logout, askGemini, dragStart, allowDrop, dragLeave, drop, addFolder, openFolder, saveApiKey, toggleLanguage, toggleDaysSelector, closeEditModal, saveEditedTask, toggleNotifPanel, clearNotifs, openProjectModal, closeProjectModal, confirmAddFolder, openConfirmModal, closeConfirmModal, clearAllData };
-})();
+   return {
+    // ...lo que ya tienes expuesto:
+    switchTab,
+    addTask,
+    editTask,
+    saveEditedTask,
+    toggleComplete,
+    startFocus,
+    stopFocus,
+    openProjectModal,
+    closeProjectModal,
+    confirmAddFolder,
+    openConfirmModal,
+    closeConfirmModal,
+    openFolder,
+    setEnergyFilter,
+    toggleDaysSelector,
+    askGemini,
+    exportData,
+    saveApiKey,
+    toggleTheme,
+    toggleLanguage,
+    dragStart,
+    allowDrop,
+    dragLeave,
+    drop,
+    toggleNotifPanel,
+    clearNotifs,
+    logout,
+    runTimeTetris // ← NUEVO
+};
 
 window.App = App; document.addEventListener('DOMContentLoaded', App.init); if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(e=>e); }); }
