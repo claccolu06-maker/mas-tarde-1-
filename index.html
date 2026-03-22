@@ -19,7 +19,9 @@
     <!-- PANTALLA DE LOGIN -->
     <div id="loginScreen" class="login-screen">
         <div class="login-card glass-panel">
-            <div class="logo"><h1>Smart-Time Workspace</h1></div>
+            <div class="logo">
+                <h1>Smart-Time Workspace</h1>
+            </div>
             <p data-i18n="login_sub">Gestión de tareas y analítica de productividad.</p>
             <button id="googleLoginBtn" class="google-btn" data-i18n="login_btn">Continuar con Google</button>
         </div>
@@ -71,24 +73,40 @@
             
             <!-- 1. BANDEJA -->
             <section id="tab-bandeja" class="tab-content active">
-                <header class="tab-header"><h2 data-i18n="inbox_title">Bandeja de Entrada</h2><p data-i18n="inbox_sub">Captura tareas para procesarlas después.</p></header>
+                <header class="tab-header">
+                    <h2 data-i18n="inbox_title">Bandeja de Entrada</h2>
+                    <p data-i18n="inbox_sub">Captura tareas para procesarlas después.</p>
+                </header>
                 
                 <div class="stats-container glass-panel">
-                    <div class="stats-text"><span data-i18n="prog_title">Progreso Diario</span><span id="statsNumbers">0/0 completadas</span></div>
-                    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                    <div class="stats-text">
+                        <span data-i18n="prog_title">Progreso Diario</span>
+                        <span id="statsNumbers">0/0 completadas</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
                 </div>
 
                 <form id="taskForm" class="task-form glass-panel">
-                    <div style="margin-bottom: 1rem;"><input type="url" id="urlInput" placeholder="URL del recurso (Opcional)"></div>
+                    <div style="margin-bottom: 1rem;">
+                        <input type="url" id="urlInput" placeholder="URL del recurso (Opcional)">
+                    </div>
                     <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
                         <input type="text" id="titleInput" placeholder="Descripción de la tarea" required style="flex: 2; min-width: 150px;">
                         <select id="categoryInput" style="flex: 1; min-width: 100px;">
-                            <option value="video" data-i18n="cat_video">Video</option><option value="articulo" data-i18n="cat_article">Artículo</option>
-                            <option value="curso" data-i18n="cat_course">Curso</option><option value="proyecto" data-i18n="cat_project">Proyecto</option>
+                            <option value="video" data-i18n="cat_video">Video</option>
+                            <option value="articulo" data-i18n="cat_article">Artículo</option>
+                            <option value="curso" data-i18n="cat_course">Curso</option>
+                            <option value="proyecto" data-i18n="cat_project">Proyecto</option>
                         </select>
-                        <select id="folderInput" style="flex: 1; min-width: 100px;"><option value="General">General</option></select>
+                        <select id="folderInput" style="flex: 1; min-width: 100px;">
+                            <option value="General">General</option>
+                        </select>
                         <select id="energyInput" style="flex: 1; min-width: 100px;">
-                            <option value="alta" data-i18n="en_high">Energía Alta</option><option value="media" selected data-i18n="en_med">Normal</option><option value="baja" data-i18n="en_low">Energía Baja</option>
+                            <option value="alta" data-i18n="en_high">Energía Alta</option>
+                            <option value="media" selected data-i18n="en_med">Normal</option>
+                            <option value="baja" data-i18n="en_low">Energía Baja</option>
                         </select>
                         <!-- QUICK ADD: Tiempo no requerido -->
                         <input type="number" id="timeInput" placeholder="Min" min="1" style="flex: 1; max-width: 80px;" title="Si lo dejas vacío, se asignarán 15 minutos por defecto.">
@@ -101,9 +119,12 @@
                             <option value="weekly" data-i18n="freq_weekly">Días específicos</option>
                         </select>
                         <div id="daysSelector_new" class="days-selector hidden">
-                            <label><input type="checkbox" value="1" class="day-cb"> L</label><label><input type="checkbox" value="2" class="day-cb"> M</label>
-                            <label><input type="checkbox" value="3" class="day-cb"> X</label><label><input type="checkbox" value="4" class="day-cb"> J</label>
-                            <label><input type="checkbox" value="5" class="day-cb"> V</label><label><input type="checkbox" value="6" class="day-cb"> S</label>
+                            <label><input type="checkbox" value="1" class="day-cb"> L</label>
+                            <label><input type="checkbox" value="2" class="day-cb"> M</label>
+                            <label><input type="checkbox" value="3" class="day-cb"> X</label>
+                            <label><input type="checkbox" value="4" class="day-cb"> J</label>
+                            <label><input type="checkbox" value="5" class="day-cb"> V</label>
+                            <label><input type="checkbox" value="6" class="day-cb"> S</label>
                             <label><input type="checkbox" value="0" class="day-cb"> D</label>
                         </div>
                     </div>
@@ -122,13 +143,19 @@
                     </div>
                 </div>
 
-                <div id="emptyState" class="empty-state hidden glass-panel"><h3 data-i18n="empty_title">Bandeja Vacía</h3><p data-i18n="empty_sub">Añade una tarea para comenzar.</p></div>
+                <div id="emptyState" class="empty-state hidden glass-panel">
+                    <h3 data-i18n="empty_title">Bandeja Vacía</h3>
+                    <p data-i18n="empty_sub">Añade una tarea para comenzar.</p>
+                </div>
                 <div id="tasksGrid" class="tasks-grid"></div>
             </section>
 
             <!-- 2. PIZARRA -->
             <section id="tab-pizarra" class="tab-content hidden">
-                <header class="tab-header"><h2 data-i18n="board_title">Pizarra</h2><p data-i18n="board_sub">Organiza y ejecuta tus tareas.</p></header>
+                <header class="tab-header">
+                    <h2 data-i18n="board_title">Pizarra</h2>
+                    <p data-i18n="board_sub">Organiza y ejecuta tus tareas.</p>
+                </header>
                 
                 <div class="ai-coach-section glass-panel">
                     <button id="askAIBtn" class="cta-button" onclick="App.askGemini()" style="width: 100%; background: var(--text-main); color: var(--bg-main);" data-i18n="btn_ai">
@@ -138,6 +165,22 @@
                         <div style="font-weight: 600; margin-bottom: 0.5rem;" data-i18n="ai_name">Asistente Ejecutivo:</div>
                         <p id="aiResponseText">Procesando datos...</p>
                     </div>
+                </div>
+
+                <!-- TETRIS DEL TIEMPO -->
+                <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <h3 style="font-size: 1rem; margin-bottom: 0.8rem;">Tetris del Tiempo</h3>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <input type="number" id="tetrisMinutes" min="5" step="5" placeholder="Minutos libres (ej: 45)" style="flex:1; min-width:150px;">
+                        <select id="tetrisEnergy" style="min-width:130px;">
+                            <option value="all">Cualquier energía</option>
+                            <option value="alta">Energía alta</option>
+                            <option value="media" selected>Normal</option>
+                            <option value="baja">Energía baja</option>
+                        </select>
+                        <button class="cta-button" onclick="App.runTimeTetris()" style="white-space:nowrap;">Generar Playlist</button>
+                    </div>
+                    <div id="tetrisResult" style="margin-top:1rem; font-size:0.9rem;"></div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
@@ -157,26 +200,49 @@
                                     <span id="treeStageName" style="font-weight: 600; font-size: 0.9rem;">Semilla</span>
                                     <span id="treeProgressText" style="font-size: 0.8rem; color: var(--text-muted);">0 / 60 XP</span>
                                 </div>
-                                <div class="progress-bar" style="height: 8px;"><div id="treeProgressFill" class="progress-fill" style="background: var(--cta-green);"></div></div>
+                                <div class="progress-bar" style="height: 8px;">
+                                    <div id="treeProgressFill" class="progress-fill" style="background: var(--cta-green);"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="kanban-board">
-                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'later')"><h3 class="column-title" data-i18n="col_later">Algún día</h3><div class="kanban-cards" id="column-later"></div></div>
-                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'week')"><h3 class="column-title" data-i18n="col_week">Esta Semana</h3><div class="kanban-cards" id="column-week"></div></div>
-                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'today')"><h3 class="column-title" style="color: var(--text-main);" data-i18n="col_today">Hacer Hoy</h3><div class="kanban-cards" id="column-today"></div></div>
+                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'later')">
+                        <h3 class="column-title" data-i18n="col_later">Algún día</h3>
+                        <div class="kanban-cards" id="column-later"></div>
+                    </div>
+                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'week')">
+                        <h3 class="column-title" data-i18n="col_week">Esta Semana</h3>
+                        <div class="kanban-cards" id="column-week"></div>
+                    </div>
+                    <div class="kanban-column" ondragover="App.allowDrop(event)" ondragleave="App.dragLeave(event)" ondrop="App.drop(event, 'today')">
+                        <h3 class="column-title" style="color: var(--text-main);" data-i18n="col_today">Hacer Hoy</h3>
+                        <div class="kanban-cards" id="column-today"></div>
+                    </div>
                 </div>
             </section>
 
             <!-- 3. ANALÍTICA (3 COLUMNAS) -->
             <section id="tab-historial" class="tab-content hidden">
-                <header class="tab-header"><h2 data-i18n="stat_title">Analítica</h2><p data-i18n="stat_sub">Métricas de rendimiento e historial.</p></header>
+                <header class="tab-header">
+                    <h2 data-i18n="stat_title">Analítica</h2>
+                    <p data-i18n="stat_sub">Métricas de rendimiento e historial.</p>
+                </header>
                 <div class="metrics-grid" style="margin-bottom: 2rem;">
-                    <div class="metric-card glass-panel"><h4 data-i18n="stat_rank">Rango Actual</h4><div id="userLevel" class="metric-value">Analista</div></div>
-                    <div class="metric-card glass-panel"><h4 data-i18n="stat_time">Tiempo Invertido</h4><div id="totalMinutes" class="metric-value">0m</div></div>
-                    <div class="metric-card glass-panel"><h4 data-i18n="stat_done">Completadas</h4><div id="totalCompleted" class="metric-value">0</div></div>
+                    <div class="metric-card glass-panel">
+                        <h4 data-i18n="stat_rank">Rango Actual</h4>
+                        <div id="userLevel" class="metric-value">Analista</div>
+                    </div>
+                    <div class="metric-card glass-panel">
+                        <h4 data-i18n="stat_time">Tiempo Invertido</h4>
+                        <div id="totalMinutes" class="metric-value">0m</div>
+                    </div>
+                    <div class="metric-card glass-panel">
+                        <h4 data-i18n="stat_done">Completadas</h4>
+                        <div id="totalCompleted" class="metric-value">0</div>
+                    </div>
                 </div>
                 
                 <!-- GRID ALINEADO A 3 COLUMNAS -->
@@ -187,7 +253,9 @@
                     </div>
                     <div class="glass-panel" style="padding: 1.5rem;">
                         <h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_dist">Distribución</h3>
-                        <div style="height: 200px;"><canvas id="statsChart"></canvas></div>
+                        <div style="height: 200px;">
+                            <canvas id="statsChart"></canvas>
+                        </div>
                     </div>
                     <div class="glass-panel" style="padding: 1.5rem; max-height: 290px; overflow: hidden; display: flex; flex-direction: column;">
                         <h3 style="font-size: 1rem; margin-bottom: 1rem;" data-i18n="stat_log">Registro de Actividad</h3>
@@ -198,10 +266,19 @@
 
             <!-- 4. AJUSTES -->
             <section id="tab-ajustes" class="tab-content hidden">
-                <header class="tab-header"><h2 data-i18n="set_title">Ajustes</h2><p data-i18n="set_sub">Configura tu entorno de trabajo.</p></header>
+                <header class="tab-header">
+                    <h2 data-i18n="set_title">Ajustes</h2>
+                    <p data-i18n="set_sub">Configura tu entorno de trabajo.</p>
+                </header>
                 <div class="settings-grid">
                     <div class="settings-card glass-panel profile-card">
-                        <div class="profile-header"><img id="userPhoto" src="" alt="Profile" class="profile-img"><div class="profile-info"><h3 id="userName">Cargando...</h3><p id="userEmail">usuario@correo.com</p></div></div>
+                        <div class="profile-header">
+                            <img id="userPhoto" src="" alt="Profile" class="profile-img">
+                            <div class="profile-info">
+                                <h3 id="userName">Cargando...</h3>
+                                <p id="userEmail">usuario@correo.com</p>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="settings-card glass-panel" style="border-left: 4px solid #a855f7;">
@@ -237,7 +314,10 @@
 
             <!-- 5. CARPETAS -->
             <section id="tab-carpetas" class="tab-content hidden">
-                <header class="tab-header"><h2 id="currentFolderName">General</h2><p data-i18n="proj_sub">Tareas asignadas a este proyecto.</p></header>
+                <header class="tab-header">
+                    <h2 id="currentFolderName">General</h2>
+                    <p data-i18n="proj_sub">Tareas asignadas a este proyecto.</p>
+                </header>
                 <div id="folderTasksGrid" class="tasks-grid"></div>
             </section>
         </main>
@@ -260,22 +340,38 @@
             <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem;" data-i18n="edit_title">Editar Tarea</h3>
             <input type="hidden" id="editTaskId">
             <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div><label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_name">Nombre de la tarea</label><input type="text" id="editTitleInput" required style="margin-top: 5px;"></div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_name">Nombre de la tarea</label>
+                    <input type="text" id="editTitleInput" required style="margin-top: 5px;">
+                </div>
                 <div style="display: flex; gap: 10px;">
-                    <div style="flex: 1;"><label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_time">Tiempo (min)</label><input type="number" id="editTimeInput" min="1" required style="margin-top: 5px;"></div>
-                    <div style="flex: 1;"><label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_energy">Energía</label>
-                        <select id="editEnergyInput" style="margin-top: 5px;"><option value="alta" data-i18n="en_high">Alta</option><option value="media" data-i18n="en_med">Normal</option><option value="baja" data-i18n="en_low">Baja</option></select>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_time">Tiempo (min)</label>
+                        <input type="number" id="editTimeInput" min="1" required style="margin-top: 5px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;" data-i18n="edit_energy">Energía</label>
+                        <select id="editEnergyInput" style="margin-top: 5px;">
+                            <option value="alta" data-i18n="en_high">Alta</option>
+                            <option value="media" data-i18n="en_med">Normal</option>
+                            <option value="baja" data-i18n="en_low">Baja</option>
+                        </select>
                     </div>
                 </div>
                 <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">
                     <label style="font-size: 0.85rem; font-weight: 500;" data-i18n="freq_label">Frecuencia de la tarea:</label>
                     <select id="editFreqInput" style="margin-top: 5px;" onchange="App.toggleDaysSelector('edit')">
-                        <option value="once" data-i18n="freq_once">Una sola vez (Normal)</option><option value="daily" data-i18n="freq_daily">Todos los días</option><option value="weekly" data-i18n="freq_weekly">Días específicos</option>
+                        <option value="once" data-i18n="freq_once">Una sola vez (Normal)</option>
+                        <option value="daily" data-i18n="freq_daily">Todos los días</option>
+                        <option value="weekly" data-i18n="freq_weekly">Días específicos</option>
                     </select>
                     <div id="daysSelector_edit" class="days-selector hidden">
-                        <label><input type="checkbox" value="1" class="edit-day-cb"> L</label><label><input type="checkbox" value="2" class="edit-day-cb"> M</label>
-                        <label><input type="checkbox" value="3" class="edit-day-cb"> X</label><label><input type="checkbox" value="4" class="edit-day-cb"> J</label>
-                        <label><input type="checkbox" value="5" class="edit-day-cb"> V</label><label><input type="checkbox" value="6" class="edit-day-cb"> S</label>
+                        <label><input type="checkbox" value="1" class="edit-day-cb"> L</label>
+                        <label><input type="checkbox" value="2" class="edit-day-cb"> M</label>
+                        <label><input type="checkbox" value="3" class="edit-day-cb"> X</label>
+                        <label><input type="checkbox" value="4" class="edit-day-cb"> J</label>
+                        <label><input type="checkbox" value="5" class="edit-day-cb"> V</label>
+                        <label><input type="checkbox" value="6" class="edit-day-cb"> S</label>
                         <label><input type="checkbox" value="0" class="edit-day-cb"> D</label>
                     </div>
                 </div>
@@ -310,7 +406,26 @@
         </div>
     </div>
 
+    <!-- MODAL QUICK ADD (para FAB) -->
+    <div id="quickAddModal" class="focus-overlay hidden" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 10003;">
+        <div class="glass-panel" style="background: var(--bg-main); padding: 1.5rem; max-width: 400px; width: 90%; border-radius: var(--radius); text-align: left;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Añadir rápido</h3>
+            <div style="display:flex; flex-direction:column; gap:0.8rem;">
+                <input type="text" id="quickTitleInput" placeholder="Descripción de la tarea" autofocus>
+                <input type="url" id="quickUrlInput" placeholder="URL (opcional)">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:1.5rem;">
+                <button class="nav-btn" onclick="App.closeQuickAdd()" style="background: var(--input-bg); border: 1px solid var(--border-color);">Cancelar</button>
+                <button class="cta-button" onclick="App.saveQuickAdd()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast-container"></div>
+
+    <!-- FAB FLOTANTE -->
+    <button id="fabAdd" class="fab-add" onclick="App.openQuickAdd()">＋</button>
+
     <script type="module" src="app.js"></script>
 </body>
 </html>
