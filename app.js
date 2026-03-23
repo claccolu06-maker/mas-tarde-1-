@@ -613,10 +613,7 @@ const App = (() => {
         );
     };
 
-    // A partir de aquí vendrá PARTE 2: addTask, edit, toggleComplete, drag, UI, switchTab, login, init, return, etc.
-
-    // exportaremos todo en el return al final
-                 // --- ADD / EDIT / COMPLETE / MOVE ---
+    // --- ADD / EDIT / COMPLETE / MOVE ---
 
     const addTask = (e) => {
         e.preventDefault();
@@ -659,7 +656,7 @@ const App = (() => {
             completedDates: [],
             completed: false,
             status: 'bandeja',
-            createdAt: getLocalDate(0)   // para Task Decay
+            createdAt: getLocalDate(0)
         });
 
         Storage.saveTasks();
@@ -770,7 +767,7 @@ const App = (() => {
                 }
             }
             UI.render();
-            if (navigator.vibrate) navigator.vibrate(40);  // HAPTIC
+            if (navigator.vibrate) navigator.vibrate(40);
             Storage.saveTree();
             Storage.saveTasks();
         }
@@ -947,7 +944,7 @@ const App = (() => {
                 tasks.splice(insertIndex, 0, task);
                 Storage.saveTasks();
                 UI.render();
-                if (navigator.vibrate) navigator.vibrate(20);   // HAPTIC drag
+                if (navigator.vibrate) navigator.vibrate(20);
             }
             draggedTaskId = null;
         }
@@ -1259,7 +1256,6 @@ const App = (() => {
                 card.ondragstart = (e) => dragStart(e, task.id);
                 card.ondragend = (e) => e.target.classList.remove('dragging');
 
-                // Task Decay visual
                 const created = task.createdAt;
                 if (created && task.status === 'later') {
                     const createdDate = new Date(created);
@@ -1475,6 +1471,107 @@ const App = (() => {
         }
     };
 
+    const planMyDay = async () => {
+        const apiKey = localStorage.getItem('smartGroqKey');
+        if (!apiKey) {
+            showToast(lang==='es' ? 'Configura tu llave de Groq en Ajustes.' : 'Configure your Groq key in Settings.');
+            return;
+        }
+
+        const pending = tasks.filter(t =>
+            !t.completed &&
+            (!t.freq || t.freq === 'once') &&
+            (t.status === 'today' || t.status === 'week')
+        );
+        if (pending.length === 0) {
+            showToast(lang==='es' ? 'No tienes tareas pendientes de hoy/semana.' : 'No pending today/week tasks.');
+            return;
+        }
+
+        const aiCard = document.getElementById('aiResponseCard');
+        const aiText = document.getElementById('aiResponseText');
+        if (aiCard && aiText) {
+            aiCard.classList.remove('hidden');
+            aiText.textContent = lang==='es' ? 'Planificando tu día...' : 'Planning your day...';
+        }
+
+        const limited = pending.slice(0, 40);
+        const now = new Date();
+        const startHour = now.getHours();
+        const startMinute = now.getMinutes();
+
+        const summary = limited.map(t => {
+            const statusLabel = t.status === 'today'
+                ? (lang==='es' ? 'HOY' : 'TODAY')
+                : (lang==='es' ? 'SEMANA' : 'THIS_WEEK');
+            return `- ${t.title} [${t.time || 25} min, energía ${t.energy || 'media'}, ${statusLabel}]`;
+        }).join('\n');
+
+        const promptEs = `
+Eres mi planificador ejecutivo de tiempo.
+
+Hora actual aproximada: ${startHour}:${String(startMinute).padStart(2,'0')}.
+
+Tengo estas tareas:
+${summary}
+
+Quiero un plan de tarde para las próximas 3–4 horas máximo.
+
+Devuélveme:
+- Una lista numerada con bloques de tiempo (ej: "16:00–16:30 – Tarea X").
+- 2–4 bloques como máximo.
+- Que respeten la energía: primero tareas de energía alta/normal, luego baja.
+- Incluye pequeños descansos de 5–10 minutos si tiene sentido.
+
+Responde SOLO con el plan, sin explicaciones largas.
+`.trim();
+
+        const promptEn = `
+You are my executive time planner.
+
+Approx current time: ${startHour}:${String(startMinute).padStart(2,'0')}.
+
+These are my tasks:
+${summary}
+
+I want an afternoon plan for the next 3–4 hours max.
+
+Return:
+- A numbered list of time blocks (e.g. "16:00–16:30 – Task X").
+- 2–4 blocks max.
+- Respect energy: start with high/normal, then low.
+- Add 5–10 min breaks if it makes sense.
+
+Reply ONLY with the plan, no long explanations.
+`.trim();
+
+        const prompt = lang === 'es' ? promptEs : promptEn;
+
+        try {
+            const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.1-8b-instant',
+                    messages: [
+                        { role: 'system', content: 'You are a focused productivity coach, concise and actionable.' },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.4,
+                    max_tokens: 400
+                })
+            });
+            const data = await resp.json();
+            const text = data.choices?.[0]?.message?.content || (lang==='es'?'No hubo respuesta.':'No response.');
+            if (aiText) aiText.textContent = text;
+        } catch (e) {
+            if (aiText) aiText.textContent = lang==='es' ? 'Error al llamar a Groq.' : 'Error calling Groq.';
+        }
+    };
+
     const saveApiKey = () => {
         const input = document.getElementById('apiKeyInput');
         if (!input) return;
@@ -1581,6 +1678,7 @@ const App = (() => {
         setEnergyFilter,
         toggleDaysSelector,
         askGemini,
+        planMyDay,
         exportData,
         saveApiKey,
         toggleTheme,
